@@ -5,13 +5,13 @@
 <div class="panel" style="max-width:760px">
     <h2 class="page-title">Firmar Acta de Entrega N.º {{ '%04d'|format(acta.id) }}</h2>
     <div class="det-grid" style="margin-bottom:16px">
-        <p><span>Equipo</span><b>{{ acta.codigo }} · {{ acta.tipo or '' }} {{ acta.marca }} {{ acta.modelo }}</b></p>
+        {% for e in equipos %}<p><span>{{ 'Equipo' if equipos|length == 1 else 'Equipo ' ~ loop.index }}</span><b>{{ e.codigo }} · {{ e.tipo or '' }} {{ e.marca }} {{ e.modelo }}{% if e.asig_estado != 'activa' %} <small style="color:#be123c">(devuelto)</small>{% endif %}</b></p>{% endfor %}
         <p><span>Empleado</span><b>{{ acta.empleado_nombre }}</b></p>
         <p><span>Asignado</span><b>{{ acta.fecha_asignacion|fecha }}</b></p>
         <p><span>Estado</span><b>{{ 'Firmada' if acta.estado == 'firmada' else 'Pendiente' }}</b></p>
     </div>
     {% if acta.estado == 'firmada' %}<div class="hint">Esta acta ya fue firmada por {{ acta.firmado_por }} el {{ acta.fecha_firma|fechahora }}.</div>
-    {% elif acta.asig_estado != 'activa' %}<div class="hint" style="color:#be123c">No se puede firmar: la asignación ya fue cerrada (RN-04).</div>
+    {% elif not acta.activas %}<div class="hint" style="color:#be123c">No se puede firmar: la asignación ya fue cerrada (RN-04).</div>
     {% else %}
     <form method="post" enctype="multipart/form-data" data-confirm="¿Registrar la firma de esta acta? No se puede deshacer.">{{ csrf() }}
         <div class="form-grid">

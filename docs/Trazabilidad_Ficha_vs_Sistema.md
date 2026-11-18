@@ -20,6 +20,9 @@ Referencia: `docs/Ficha_Documentacion_SIGEC.docx`. Cuando cambie el sistema o la
 | RF-18 | `/usuarios` (rol + vínculo a empleado; el rol Empleado crea su ficha al darse de alta) | Cumple |
 | RF-22 | Foto de perfil por usuario (`/cuenta/foto`, menú del usuario) | Cumple |
 | RF-19, RNF-06 | Configuración, respaldo manual y automático diario (`respaldos/`) | Cumple |
+| RF-03, RN-12, RN-18, CA-18 | Catálogos de marca, área, ubicación y cargo (`CATALOGOS`, `textos.py`), valores normalizados y migrados al arrancar | Cumple |
+| RF-05, RF-06, RN-02, RN-03, RN-11, RN-20, CA-20 | Asignación de varios equipos en una entrega con una sola acta (`asignar_equipo`, `asignacion.acta_id`, `_equipos_acta`) | Cumple |
+| RF-04, RN-21, CA-21 | Correo obligatorio y validado en empleados; nombres con formato uniforme (`_validar_empleado`, `textos.nombre_propio`) | Cumple |
 | RF-18, RN-19, CA-19 | Restablecer clave con contraseña temporal y cambio obligatorio (`restablecer_clave`, `clave_obligatoria`); recuperación del Admin con `ADMIN_RESET_PASSWORD` | Cumple |
 | RF-20, RNF-11, CA-15 | Asistente de IA (`asistente.py`: motor interno/Ollama locales + Claude opcional en `ia.py`, solo lectura por rol, interruptor del Admin) + manual PDF | Cumple |
 | RF-21, CA-13 | `/mis-equipos`, «Mis actas» | Cumple |

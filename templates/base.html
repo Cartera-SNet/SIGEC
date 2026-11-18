@@ -104,7 +104,7 @@
             <div class="flash flash-{{ cat }}"><i class="bi {{ {'success':'bi-check-circle-fill','danger':'bi-exclamation-octagon-fill','warning':'bi-exclamation-triangle-fill'}.get(cat,'bi-info-circle-fill') }}"></i><span>{{ msg }}</span><button class="x" type="button" onclick="this.parentNode.remove()">×</button></div>
             {% endfor %}
         {% endwith %}
-        {% if clave_inicial %}<div class="flash flash-warning"><i class="bi bi-shield-exclamation"></i> Sigues usando la contraseña inicial del usuario Admin. Cámbiala ahora en <a href="{{ url_for('configuracion', tab='seguridad') }}">Configuración › Seguridad</a>.</div>{% endif %}
+        {% if clave_inicial %}<div class="flash flash-warning"><i class="bi bi-shield-exclamation"></i><span>Sigues usando la contraseña inicial del usuario Admin. Cámbiala ahora en <a href="{{ url_for('configuracion', tab='seguridad') }}">Configuración › Seguridad</a>.</span></div>{% endif %}
         {% block content %}{% endblock %}
     </main>
 </div>

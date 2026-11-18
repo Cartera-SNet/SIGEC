@@ -12,6 +12,7 @@
  p.t{font-size:14px;line-height:1.55;text-align:justify;margin:14px 0}
  .firmas{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:70px}
  .firmas div{border-top:1.5px solid #16264a;padding-top:8px;text-align:center;font-size:13.5px}
+ table.lista td{font-size:13.5px}table.lista tr.th td{background:#eef3fd;font-weight:600}
  .estado{display:inline-block;padding:3px 12px;border-radius:12px;font-size:13px;font-weight:600}
  .ok{background:#d6f3e1;color:#15803d}.pe{background:#fff1cc;color:#946200}
  .barra{max-width:800px;margin:14px auto 0;text-align:right}
@@ -23,15 +24,20 @@
  <div class="cab"><img src="{{ url_for('static', filename='favicon.png') }}" alt="">
   <div><h1>Acta de Entrega de Equipo de Cómputo</h1><p>{{ cfg.empresa }} · SIGEC</p></div>
   <div class="num">Acta N.º<b>{{ '%04d'|format(a.id) }}</b><span class="estado {{ 'ok' if a.estado == 'firmada' else 'pe' }}">{{ 'Firmada' if a.estado == 'firmada' else 'Pendiente de firma' }}</span></div></div>
- <h2>Datos del equipo</h2>
- <table><tr><td class="k">Código</td><td>{{ a.codigo }}</td><td class="k">Tipo</td><td>{{ a.tipo or '-' }}</td></tr>
-  <tr><td class="k">Marca / Modelo</td><td>{{ a.marca }} {{ a.modelo }}</td><td class="k">N.º de serie</td><td>{{ a.numero_serie }}</td></tr>
-  <tr><td class="k">Placa interna</td><td colspan="3">{{ a.placa or '-' }}</td></tr></table>
+ <h2>{{ 'Datos del equipo' if equipos|length == 1 else 'Equipos entregados (' ~ equipos|length ~ ')' }}</h2>
+ {% if equipos|length == 1 %}{% set e = equipos[0] %}
+ <table><tr><td class="k">Código</td><td>{{ e.codigo }}</td><td class="k">Tipo</td><td>{{ e.tipo or '-' }}</td></tr>
+  <tr><td class="k">Marca / Modelo</td><td>{{ e.marca }} {{ e.modelo }}</td><td class="k">N.º de serie</td><td>{{ e.numero_serie }}</td></tr>
+  <tr><td class="k">Placa interna</td><td colspan="3">{{ e.placa or '-' }}</td></tr></table>
+ {% else %}
+ <table class="lista"><tr class="th"><td>#</td><td>Código</td><td>Tipo</td><td>Marca / Modelo</td><td>N.º de serie</td><td>Placa</td></tr>
+  {% for e in equipos %}<tr><td>{{ loop.index }}</td><td>{{ e.codigo }}</td><td>{{ e.tipo or '-' }}</td><td>{{ e.marca }} {{ e.modelo }}</td><td>{{ e.numero_serie }}</td><td>{{ e.placa or '-' }}</td></tr>{% endfor %}</table>
+ {% endif %}
  <h2>Datos del responsable</h2>
  <table><tr><td class="k">Nombre</td><td>{{ a.empleado }}</td><td class="k">Documento</td><td>{{ a.documento }}</td></tr>
   <tr><td class="k">Área</td><td>{{ a.area or '-' }}</td><td class="k">Cargo</td><td>{{ a.cargo or '-' }}</td></tr>
   <tr><td class="k">Fecha de entrega</td><td colspan="3">{{ a.fecha_asignacion|fecha }}</td></tr>
   {% if a.obs_asignacion %}<tr><td class="k">Observaciones</td><td colspan="3">{{ a.obs_asignacion }}</td></tr>{% endif %}</table>
- <p class="t">El empleado recibe el equipo descrito en buen estado de funcionamiento y se compromete a darle un uso adecuado exclusivamente para fines laborales, a custodiarlo, a reportar de inmediato cualquier daño, pérdida o falla, y a devolverlo cuando la empresa lo requiera o termine su vinculación.</p>
+ <p class="t">El empleado recibe {{ "el equipo descrito" if equipos|length == 1 else "los equipos descritos" }} en buen estado de funcionamiento y se compromete a darle un uso adecuado exclusivamente para fines laborales, a custodiar{{ "lo" if equipos|length == 1 else "los" }}, a reportar de inmediato cualquier daño, pérdida o falla, y a devolver{{ "lo" if equipos|length == 1 else "los" }} cuando la empresa lo requiera o termine su vinculación.</p>
  <div class="firmas"><div>Entrega<br><b>Administración de TI</b></div><div>Recibe<br><b>{{ a.empleado }}</b><br>C.C. {{ a.documento }}{% if a.estado == 'firmada' %}<br><small>Firmada el {{ a.fecha_firma|fechahora }}</small>{% endif %}</div></div>
 </div></body></html>

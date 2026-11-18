@@ -16,8 +16,11 @@
                 <select class="sel" name="empleado_id"><option value="">Sin vincular</option>
                 {% for m in empleados %}<option value="{{ m.id }}" {{ 'selected' if d.empleado_id|string == m.id|string }}>{{ m.nombres }} {{ m.apellidos or '' }} ({{ m.documento }})</option>{% endfor %}</select>
                 <div class="hint">Permite que un usuario con rol Empleado vea «Mis equipos» y firme sus propias actas.</div></div>
-            {% if not editar %}<div class="fg" style="grid-column:1/-1"><label>Documento (solo si el rol es Empleado y aún no existe su ficha)</label>
-                <input class="inp" name="documento" value="{{ d.documento or '' }}" maxlength="20" placeholder="Se crea la ficha de empleado con el nombre completo y este documento"></div>{% endif %}
+            {% if not editar %}<div class="fg"><label>Documento (solo si el rol es Empleado y aún no existe su ficha)</label>
+                <input class="inp" name="documento" value="{{ d.documento or '' }}" maxlength="20" placeholder="Se crea la ficha con el nombre completo y este documento"></div>
+            <div class="fg"><label>Correo del empleado (si se crea su ficha)</label>
+                <input class="inp" type="email" name="correo" value="{{ d.correo or '' }}" maxlength="120" placeholder="nombre@empresa.com">
+                <div class="hint">Dato de contacto de la ficha. No se usa para iniciar sesión.</div></div>{% endif %}
         </div>
         {% if editar and not principal %}
         <div class="fg"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" name="activo" value="1" {{ 'checked' if d.activo }} style="width:18px;height:18px"> Usuario activo (puede iniciar sesión)</label></div>

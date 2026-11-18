@@ -12,9 +12,9 @@
         </div>
     </div>
     <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>N.º</th><th>Equipo</th><th>Empleado</th><th>Generada</th><th>Estado</th><th class="c">Acciones</th></tr></thead>
+        <thead><tr><th>N.º</th><th>Equipo(s)</th><th>Empleado</th><th>Generada</th><th>Estado</th><th class="c">Acciones</th></tr></thead>
         <tbody>{% for a in actas %}
-            <tr><td class="code">{{ '%04d'|format(a.id) }}</td><td>{{ a.codigo }} <small style="color:var(--muted)">({{ a.numero_serie }})</small></td><td>{{ a.empleado_nombre }}</td><td>{{ a.fecha_generacion|fecha }}</td>
+            <tr><td class="code">{{ '%04d'|format(a.id) }}</td><td>{% if a.n_equipos > 1 %}{{ a.codigos }} <small style="color:var(--muted)">({{ a.n_equipos }} equipos)</small>{% else %}{{ a.codigo }} <small style="color:var(--muted)">({{ a.numero_serie }})</small>{% endif %}</td><td>{{ a.empleado_nombre }}</td><td>{{ a.fecha_generacion|fecha }}</td>
                 <td>{% if a.estado == 'firmada' %}<span class="pill green"><i class="bi bi-check-circle-fill"></i>Firmada {{ a.fecha_firma|fecha }}</span>{% else %}<span class="pill yellow"><i class="bi bi-hourglass-split"></i>Pendiente</span>{% endif %}</td>
                 <td><div class="acts">
                     <a class="act" href="{{ url_for('imprimir_acta', acta_id=a.id) }}" target="_blank" title="Imprimir acta"><i class="bi bi-printer-fill"></i></a>

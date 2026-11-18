@@ -613,3 +613,11 @@ body.nav-closed .main{margin-left:0}
 
 .ia-m a{color:#0b4fd6;font-weight:600;text-decoration:underline}
 .ia-m code{background:#eef3ff;border-radius:4px;padding:1px 5px;font-size:13px}
+
+form.cargando{opacity:.65;transition:opacity .15s}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#eaf1ff;color:#0b2a66;border:1px solid #c9dafc;border-radius:999px;padding:6px 8px 6px 14px;font-size:14px;font-weight:500}
+.chip button{border:0;background:#fff;color:#1a6cff;border-radius:50%;width:22px;height:22px;line-height:20px;cursor:pointer;font-size:16px;padding:0}
+.chip button:hover{background:#1a6cff;color:#fff}
+.add-btn.on{background:#16a34a;color:#fff}

@@ -163,7 +163,7 @@ HERRAMIENTAS_INVENTARIO = [
        {"por": {**_S, "enum": ["estado", "tipo", "marca", "ubicacion", "area_asignados"],
                 "description": "area_asignados = equipos asignados por área del empleado"}}, ["por"]),
     _t("equipos_sin_movimiento", "Equipos que llevan más de N días sin movimientos (por defecto el umbral configurado).", {"dias": _N}),
-    _t("catalogos", "Opciones de los catálogos: tipos, estados, marcas y áreas."),
+    _t("catalogos", "Opciones de los catálogos: tipos, estados, marcas, áreas, ubicaciones y cargos."),
 ]
 HERRAMIENTA_USUARIOS = _t("listar_usuarios", "Lista los usuarios del sistema (solo Administrador): usuario, nombre, rol y si está activo.")
 HERRAMIENTAS_EMPLEADO = [_t("mis_equipos", "Equipos que tiene a cargo la persona que pregunta, su historial y el estado de sus actas.")]
@@ -310,7 +310,7 @@ class Datos:
                     "nota": "Hay varios; pide al usuario que precise (documento o nombre completo)."}
         emp = cand[0]
         eqs = self.q(f"""SELECT {COD} AS codigo, t.nombre AS tipo, e.marca, e.modelo, a.fecha_asignacion, a.fecha_devolucion, a.estado,
-                                (SELECT ac.estado FROM acta ac WHERE ac.asignacion_id = a.id ORDER BY ac.id LIMIT 1) AS acta
+                                (SELECT ac.estado FROM acta ac WHERE ac.id = a.acta_id) AS acta
                          FROM asignacion a JOIN equipo e ON e.id = a.equipo_id LEFT JOIN tipo_equipo t ON t.id = e.tipo_id
                          WHERE a.empleado_id = %s ORDER BY a.fecha_asignacion DESC LIMIT 30""", (emp["id"],))
         d = {k: v for k, v in emp.items() if k != "id"}
@@ -373,7 +373,8 @@ class Datos:
         w = " AND ".join(cond)
         join = "FROM acta ac JOIN asignacion a ON a.id = ac.asignacion_id JOIN equipo e ON e.id = a.equipo_id JOIN empleado emp ON emp.id = a.empleado_id"
         total = self.q1(f"SELECT COUNT(*) AS c {join} WHERE {w}", par)["c"]
-        filas = self.q(f"""SELECT LPAD(ac.id::text, 4, '0') AS numero, {COD} AS equipo, {EMP_NOM} AS empleado, ac.fecha_generacion,
+        filas = self.q(f"""SELECT LPAD(ac.id::text, 4, '0') AS numero,
+                                  COALESCE((SELECT string_agg('EQ-' || LPAD(x.equipo_id::text, 3, '0'), ', ' ORDER BY x.id) FROM asignacion x WHERE x.acta_id = ac.id), {COD}) AS equipos, {EMP_NOM} AS empleado, ac.fecha_generacion,
                                   ac.estado, ac.fecha_firma, ac.firmado_por, (ac.evidencia_path IS NOT NULL) AS con_evidencia
                            {join} WHERE {w} ORDER BY ac.id DESC LIMIT %s""", par + [_lim(a)])
         return {"total_coincidencias": total, "actas": [_ser(f) for f in filas]}
@@ -433,7 +434,9 @@ class Datos:
         return {"tipos": n("SELECT nombre, activo FROM tipo_equipo ORDER BY nombre"),
                 "estados": n("SELECT nombre, activo FROM estado_equipo ORDER BY id"),
                 "marcas": n("SELECT nombre, activo FROM marca ORDER BY lower(nombre)"),
-                "areas": n("SELECT nombre, activo FROM area ORDER BY lower(nombre)")}
+                "areas": n("SELECT nombre, activo FROM area ORDER BY lower(nombre)"),
+                "ubicaciones": n("SELECT nombre, activo FROM ubicacion ORDER BY lower(nombre)"),
+                "cargos": n("SELECT nombre, activo FROM cargo ORDER BY lower(nombre)")}
 
     def listar_usuarios(self, a):
         if self.u["rol"] != "Administrador":
@@ -446,7 +449,7 @@ class Datos:
         if not emp:
             return {"error": "Tu usuario no está vinculado a un empleado; pide al administrador que lo vincule."}
         filas = self.q(f"""SELECT {COD} AS codigo, t.nombre AS tipo, e.marca, e.modelo, a.fecha_asignacion, a.fecha_devolucion, a.estado,
-                                  (SELECT ac.estado FROM acta ac WHERE ac.asignacion_id = a.id ORDER BY ac.id LIMIT 1) AS acta
+                                  (SELECT ac.estado FROM acta ac WHERE ac.id = a.acta_id) AS acta
                            FROM asignacion a JOIN equipo e ON e.id = a.equipo_id LEFT JOIN tipo_equipo t ON t.id = e.tipo_id
                            WHERE a.empleado_id = %s ORDER BY a.fecha_asignacion DESC LIMIT 30""", (emp,))
         return {"equipos_activos": [_ser(f) for f in filas if f["estado"] == "activa"],

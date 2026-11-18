@@ -13,24 +13,27 @@
                     <select class="sel" name="empleado_id" required><option value="">Seleccione un empleado</option>
                     {% for m in empleados %}<option value="{{ m.id }}">{{ m.nombres }} {{ m.apellidos or '' }} ({{ m.documento }}){{ ' - ' ~ m.area if m.area }}</option>{% endfor %}</select>
                     {% if not empleados %}<div class="hint" style="color:#be123c">No hay empleados activos. <a href="{{ url_for('nuevo_empleado') }}">Registra uno primero</a>.</div>{% endif %}</div>
-                <div class="fg"><label>Equipo <span class="req">*</span></label>
-                    <select class="sel" name="equipo_id" id="sel-equipo" required><option value="">Seleccione un equipo</option>
-                    {% for e in disponibles %}<option value="{{ e.id }}" {{ 'selected' if preseleccion == e.id|string }}>{{ e.codigo }} - {{ e.tipo or 'Equipo' }} {{ e.marca }} {{ e.modelo }}</option>{% endfor %}</select>
+                <div class="fg"><label>Equipos <span class="req">*</span> <small style="color:var(--muted);font-weight:400">(puedes asignar varios en una sola entrega)</small></label>
+                    <select class="sel" id="sel-equipo"><option value="">Agregar un equipo…</option>
+                    {% for e in disponibles %}<option value="{{ e.id }}" data-txt="{{ e.codigo }} · {{ e.tipo or 'Equipo' }} {{ e.marca }} {{ e.modelo }}" {{ 'data-pre="1"' if preseleccion == e.id|string }}>{{ e.codigo }} - {{ e.tipo or 'Equipo' }} {{ e.marca }} {{ e.modelo }}</option>{% endfor %}</select>
+                    <div id="chips" class="chips" aria-live="polite"></div>
+                    <div id="hint-vacio" class="hint">Aún no has agregado equipos. Elige uno en la lista o usa el botón «+» de «Equipos Disponibles».</div>
                     {% if not disponibles %}<div class="hint" style="color:#be123c">No hay equipos disponibles en este momento.</div>{% endif %}</div>
                 <div class="fg"><label>Fecha de Asignación</label><div class="date-wrap"><input class="inp" type="date" name="fecha" value="{{ hoy }}" max="{{ hoy }}"><i class="bi bi-calendar3"></i></div></div>
                 <div class="fg"><label>Observaciones</label><textarea class="txt" name="observaciones" style="min-height:76px" placeholder="Ingrese observaciones..."></textarea></div>
-                <button class="btn btn-primary" {{ 'disabled' if not disponibles or not empleados }}><i class="bi bi-send-fill"></i> Asignar Equipo</button>
+                <button class="btn btn-primary" {{ 'disabled' if not disponibles or not empleados }}><i class="bi bi-send-fill"></i> <span id="txt-asignar">Asignar Equipo</span></button>
             </form>
         </div>
     </div>
     <div>
         <h3 class="sub-title" style="margin-top:52px;font-size:22px">Equipos Disponibles</h3>
-        <label class="search" style="height:46px;margin-bottom:14px"><i class="bi bi-search" style="font-size:18px"></i><input id="buscar-disp" placeholder="Buscar equipo..." autocomplete="off"></label>
+        <label class="search" style="height:46px;margin-bottom:10px"><i class="bi bi-search" style="font-size:18px"></i><input id="buscar-disp" placeholder="Buscar equipo..." autocomplete="off"></label>
+        {% if disponibles|length > 1 %}<button type="button" class="btn btn-ghost btn-sm" id="add-todos" style="margin-bottom:12px"><i class="bi bi-check2-all"></i> Agregar todos los que se ven</button>{% endif %}
         <div id="lista-disp">
         {% for e in disponibles %}
             <div class="asg-opt" data-t="{{ (e.codigo ~ ' ' ~ (e.tipo or '') ~ ' ' ~ e.marca ~ ' ' ~ e.modelo)|lower }}">
                 <div class="code">{{ e.codigo }}</div><div>{{ e.tipo or 'Equipo' }} {{ e.marca }}</div><div>{{ estado_pill('Disponible') }}</div>
-                <div><button type="button" class="add-btn" data-id="{{ e.id }}" title="Seleccionar para asignar">+</button></div>
+                <div><button type="button" class="add-btn" data-id="{{ e.id }}" title="Agregar o quitar de la entrega">+</button></div>
             </div>
         {% else %}<div class="empty"><i class="bi bi-inbox"></i>No hay equipos disponibles</div>{% endfor %}
         </div>
@@ -52,9 +55,36 @@
 {% endblock %}
 {% block scripts %}
 <script>
-document.querySelectorAll('.add-btn').forEach(function(b){b.addEventListener('click',function(){
-  var s=document.getElementById('sel-equipo');s.value=b.dataset.id;s.focus();s.scrollIntoView({behavior:'smooth',block:'center'});});});
-document.getElementById('buscar-disp').addEventListener('input',function(){var t=this.value.toLowerCase();
-  document.querySelectorAll('#lista-disp .asg-opt').forEach(function(r){r.style.display=r.dataset.t.indexOf(t)>-1?'':'none';});});
+(function(){
+  var sel=document.getElementById('sel-equipo'), chips=document.getElementById('chips'), form=document.getElementById('form-asignar'),
+      vacio=document.getElementById('hint-vacio'), txt=document.getElementById('txt-asignar'), elegidos={};
+  function textoDe(id){var o=sel.querySelector('option[value="'+id+'"]');return o?o.dataset.txt:('Equipo '+id);}
+  function pintar(){
+    chips.innerHTML='';
+    Object.keys(elegidos).forEach(function(id){
+      var c=document.createElement('span');c.className='chip';c.textContent=textoDe(id)+' ';
+      var x=document.createElement('button');x.type='button';x.title='Quitar';x.innerHTML='&times;';x.addEventListener('click',function(){quitar(id);});
+      var h=document.createElement('input');h.type='hidden';h.name='equipo_id';h.value=id;
+      c.appendChild(x);c.appendChild(h);chips.appendChild(c);});
+    var n=Object.keys(elegidos).length;
+    vacio.style.display=n?'none':'';
+    txt.textContent=n>1?'Asignar '+n+' equipos':'Asignar Equipo';
+    document.querySelectorAll('.add-btn').forEach(function(b){var on=!!elegidos[b.dataset.id];b.textContent=on?'✓':'+';b.classList.toggle('on',on);});
+    Array.prototype.forEach.call(sel.options,function(o){if(o.value)o.hidden=!!elegidos[o.value];});
+  }
+  function agregar(id){if(id){elegidos[id]=1;pintar();}}
+  function quitar(id){delete elegidos[id];pintar();}
+  sel.addEventListener('change',function(){agregar(sel.value);sel.value='';});
+  document.querySelectorAll('.add-btn').forEach(function(b){b.addEventListener('click',function(){
+    if(elegidos[b.dataset.id])quitar(b.dataset.id);else agregar(b.dataset.id);});});
+  var todos=document.getElementById('add-todos');
+  if(todos)todos.addEventListener('click',function(){document.querySelectorAll('#lista-disp .asg-opt').forEach(function(r){
+    if(r.style.display!=='none'){elegidos[r.querySelector('.add-btn').dataset.id]=1;}});pintar();});
+  document.getElementById('buscar-disp').addEventListener('input',function(){var t=this.value.toLowerCase();
+    document.querySelectorAll('#lista-disp .asg-opt').forEach(function(r){r.style.display=r.dataset.t.indexOf(t)>-1?'':'none';});});
+  form.addEventListener('submit',function(e){if(!Object.keys(elegidos).length){e.preventDefault();vacio.style.color='#be123c';sel.focus();}});
+  var pre=sel.querySelector('option[data-pre]');if(pre)agregar(pre.value);
+  pintar();
+})();
 </script>
 {% endblock %}

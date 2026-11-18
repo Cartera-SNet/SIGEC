@@ -3,17 +3,18 @@
 {% block title %}Inventario{% endblock %}
 {% block content %}
 <div class="panel">
-    <form class="toolbar" method="get">
+    <form class="toolbar" method="get" data-auto>
         <label class="search"><i class="bi bi-search"></i><input name="q" value="{{ texto }}" placeholder="Buscar equipo, marca, modelo..." autocomplete="off"></label>
-        <select class="filter-sel" name="estado" onchange="this.form.submit()">
+        <select class="filter-sel" name="estado">
             <option value="">Todos los estados</option>
             {% for s in estados %}<option value="{{ s.nombre }}" {{ 'selected' if s.nombre == estado }}>{{ s.nombre }}</option>{% endfor %}
         </select>
         {% if puede('gestionar') %}<a class="btn btn-primary" href="{{ url_for('nuevo_equipo') }}"><i class="bi bi-plus-lg"></i> Nuevo Equipo</a>{% endif %}
         <div class="filters-row">
-            <select class="filter-sel" name="tipo" onchange="this.form.submit()" aria-label="Tipo"><option value="">Todos los tipos</option>
+            <select class="filter-sel" name="tipo" aria-label="Tipo"><option value="">Todos los tipos</option>
                 {% for t in tipos %}<option value="{{ t.id }}" {{ 'selected' if f.tipo == t.id|string }}>{{ t.nombre }}</option>{% endfor %}</select>
-            <input class="filter-sel" name="ubicacion" value="{{ f.ubicacion }}" placeholder="Ubicación" aria-label="Ubicación">
+            <select class="filter-sel" name="ubicacion" aria-label="Ubicación"><option value="">Todas las ubicaciones</option>
+                {% for u in opciones('ubicacion', f.ubicacion) %}<option {{ 'selected' if (f.ubicacion or '')|lower == u|lower }}>{{ u }}</option>{% endfor %}</select>
             <label class="fdate">Ingreso desde <input class="filter-sel" type="date" name="desde" value="{{ f.desde }}"></label>
             <label class="fdate">hasta <input class="filter-sel" type="date" name="hasta" value="{{ f.hasta }}"></label>
             <button class="btn btn-ghost btn-sm" style="height:50px">Filtrar</button>

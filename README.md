@@ -7,7 +7,7 @@ devoluciones, mantenimientos, reportes (PDF/Excel), configuración y un asistent
 1. Instala Python 3.10+ (con «Add Python to PATH»).
 2. Revisa que `.env` tenga tu `DATABASE_URL` de Neon (ver `.env.example`).
 3. Doble clic en `ejecutar_sigec.bat` (o `pip install -r requirements.txt` y `python app.py`).
-4. Abre http://localhost:5000 — usuario **Admin**, contraseña inicial **@dm1n2026** (cámbiala al entrar).
+4. Abre http://localhost:5000 — usuario **Admin**, contraseña inicial indicada en la Ficha de Documentación (cámbiala al entrar).
 
 Las tablas se crean/actualizan solas al arrancar (no hay que correr `sigec_postgresql.sql`; se conserva como referencia).
 

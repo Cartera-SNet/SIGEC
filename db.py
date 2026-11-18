@@ -9,10 +9,12 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash
 
+import textos
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 ADMIN_USER = "Admin"
-ADMIN_PASS = "@dm1n2026"
+ADMIN_PASS = "Admin2026"
 ADMIN_NOMBRE = "Víctor Yepes"
 
 
@@ -148,6 +150,16 @@ CREATE TABLE IF NOT EXISTS area (
     nombre VARCHAR(100) NOT NULL UNIQUE,
     activo BOOLEAN DEFAULT TRUE
 );
+CREATE TABLE IF NOT EXISTS ubicacion (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    activo BOOLEAN DEFAULT TRUE
+);
+CREATE TABLE IF NOT EXISTS cargo (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    activo BOOLEAN DEFAULT TRUE
+);
 CREATE TABLE IF NOT EXISTS configuracion (
     clave VARCHAR(60) PRIMARY KEY,
     valor TEXT
@@ -172,6 +184,11 @@ ESTADOS = [
 ]
 MARCAS = ["Acer", "Apple", "Asus", "Canon", "Dell", "Epson", "HP", "Lenovo", "LG", "Logitech", "Samsung"]
 AREAS = ["Administración", "Contabilidad", "Operaciones", "Sistemas", "Talento Humano", "Ventas"]
+UBICACIONES = ["Bodega", "Oficina Principal", "Recepción", "Sala de Sistemas"]
+CARGOS = ["Analista", "Asistente", "Auxiliar", "Coordinador", "Director", "Gerente", "Jefe de Área", "Técnico"]
+# Catálogo -> (tabla donde se usa, columna). Sus valores se guardan normalizados (ver textos.etiqueta)
+CATALOGOS_USO = {"marca": ("equipo", "marca"), "area": ("empleado", "area"),
+                 "ubicacion": ("equipo", "ubicacion"), "cargo": ("empleado", "cargo")}
 TIPOS = [
     ("Portátil", "Computo"), ("Escritorio", "Computo"), ("Monitor", "Periferico"),
     ("Teclado", "Periferico"), ("Mouse", "Periferico"), ("Impresora", "Impresion"),
@@ -187,6 +204,62 @@ CONFIG_DEFAULT = {
     "respaldo_auto": "1",
     "ia_externa": "1",  # usar Claude (API de Anthropic) en el asistente si hay clave configurada
 }
+
+
+def _normalizar_catalogo(cur, cat, uso_tabla, uso_col):
+    """Deja el catálogo con nombres normalizados (sin duplicados), importa los valores escritos a mano
+    en el módulo que lo usa y unifica cómo se muestran en los registros existentes."""
+    cur.execute(f"SELECT id, nombre, activo FROM {cat} ORDER BY id")
+    grupos = {}
+    for r in cur.fetchall():
+        grupos.setdefault(textos.etiqueta(r["nombre"]).lower(), []).append(r)
+    for filas in grupos.values():
+        canon = textos.etiqueta(filas[0]["nombre"])
+        keeper = next((f for f in filas if f["nombre"] == canon), filas[0])
+        activo = any(f["activo"] for f in filas)
+        for f in filas:
+            if f["id"] != keeper["id"]:
+                cur.execute(f"DELETE FROM {cat} WHERE id = %s", (f["id"],))
+        if keeper["nombre"] != canon or keeper["activo"] != activo:
+            cur.execute(f"UPDATE {cat} SET nombre = %s, activo = %s WHERE id = %s", (canon, activo, keeper["id"]))
+    cur.execute(f"SELECT DISTINCT TRIM({uso_col}) AS v FROM {uso_tabla} WHERE TRIM(COALESCE({uso_col},'')) <> ''")
+    for r in cur.fetchall():
+        canon = textos.etiqueta(r["v"])
+        cur.execute(f"INSERT INTO {cat} (nombre) SELECT %s WHERE NOT EXISTS (SELECT 1 FROM {cat} WHERE lower(nombre) = lower(%s))",
+                    (canon, canon))
+    cur.execute(f"SELECT nombre FROM {cat}")
+    for r in cur.fetchall():
+        cur.execute(f"UPDATE {uso_tabla} SET {uso_col} = %s WHERE lower(TRIM({uso_col})) = lower(%s) AND {uso_col} <> %s",
+                    (r["nombre"], r["nombre"], r["nombre"]))
+
+
+def normalizar_datos(cur):
+    """Migración idempotente: catálogos y nombres con formato uniforme; correo en minúsculas; las fichas
+    antiguas sin correo reciben uno provisional asociado a su nombre (nombre.apellido@ejemplo.com)."""
+    for cat, (tabla, col) in CATALOGOS_USO.items():
+        _normalizar_catalogo(cur, cat, tabla, col)
+    cur.execute("SELECT id, nombres, apellidos, correo FROM empleado ORDER BY id")
+    usados = set()
+    filas = cur.fetchall()
+    for r in filas:
+        if (r["correo"] or "").strip():
+            usados.add(textos.correo(r["correo"]))
+    for r in filas:
+        nombres, apellidos = textos.nombre_propio(r["nombres"]), textos.nombre_propio(r["apellidos"]) or None
+        mail = textos.correo(r["correo"])
+        if not mail:
+            mail = textos.correo_ficticio(nombres, apellidos)
+            if mail in usados:
+                mail = mail.replace("@", f".{r['id']}@")
+            usados.add(mail)
+        if (nombres, apellidos, mail) != (r["nombres"], r["apellidos"], r["correo"]):
+            cur.execute("UPDATE empleado SET nombres = %s, apellidos = %s, correo = %s WHERE id = %s",
+                        (nombres, apellidos, mail, r["id"]))
+    cur.execute("SELECT id, nombre_completo FROM usuario WHERE nombre_completo IS NOT NULL")
+    for r in cur.fetchall():
+        nuevo = textos.nombre_propio(r["nombre_completo"])
+        if nuevo != r["nombre_completo"]:
+            cur.execute("UPDATE usuario SET nombre_completo = %s WHERE id = %s", (nuevo, r["id"]))
 
 
 def init_db():
@@ -206,19 +279,14 @@ def init_db():
     # Responsable del mantenimiento (usuario con rol Mantenimiento) y catálogos de marca y área
     cur.execute("ALTER TABLE mantenimiento ADD COLUMN IF NOT EXISTS responsable_id INTEGER REFERENCES usuario(id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_mant_responsable ON mantenimiento(responsable_id)")
-    for nombre in MARCAS:
-        cur.execute("INSERT INTO marca (nombre) VALUES (%s) ON CONFLICT (nombre) DO NOTHING", (nombre,))
-    for nombre in AREAS:
-        cur.execute("INSERT INTO area (nombre) VALUES (%s) ON CONFLICT (nombre) DO NOTHING", (nombre,))
-    # Los valores ya escritos a mano en equipos y empleados pasan a ser opciones del catálogo
-    cur.execute("""INSERT INTO marca (nombre) SELECT DISTINCT TRIM(marca) FROM equipo
-                   WHERE TRIM(COALESCE(marca,'')) <> '' AND NOT EXISTS
-                         (SELECT 1 FROM marca m WHERE lower(m.nombre) = lower(TRIM(equipo.marca)))
-                   ON CONFLICT (nombre) DO NOTHING""")
-    cur.execute("""INSERT INTO area (nombre) SELECT DISTINCT TRIM(area) FROM empleado
-                   WHERE TRIM(COALESCE(area,'')) <> '' AND NOT EXISTS
-                         (SELECT 1 FROM area a WHERE lower(a.nombre) = lower(TRIM(empleado.area)))
-                   ON CONFLICT (nombre) DO NOTHING""")
+    # Una acta puede cubrir varios equipos entregados juntos: cada asignación apunta a su acta
+    cur.execute("ALTER TABLE asignacion ADD COLUMN IF NOT EXISTS acta_id INTEGER REFERENCES acta(id)")
+    cur.execute("UPDATE asignacion a SET acta_id = ac.id FROM acta ac WHERE ac.asignacion_id = a.id AND a.acta_id IS NULL")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_asignacion_acta ON asignacion(acta_id)")
+    for tabla, lista in (("marca", MARCAS), ("area", AREAS), ("ubicacion", UBICACIONES), ("cargo", CARGOS)):
+        for nombre in lista:
+            cur.execute(f"INSERT INTO {tabla} (nombre) VALUES (%s) ON CONFLICT (nombre) DO NOTHING", (nombre,))
+    normalizar_datos(cur)
 
     # Migración: 'En reparación' pasa a llamarse 'En Mantenimiento' (como en el diseño).
     cur.execute("SELECT id FROM estado_equipo WHERE nombre = 'En Mantenimiento'")

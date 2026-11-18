@@ -11,7 +11,7 @@ variables de Railway.
 4. **Volumen para fotos, evidencias y respaldos** (el disco del contenedor se borra en cada despliegue):
    servicio → **Settings → Volumes → New Volume**, ruta de montaje `/data`. La variable `DATA_DIR=/data` ya lo usa.
 5. **Settings → Networking → Generate Domain** para obtener la URL pública (HTTPS).
-6. Abre la URL e ingresa con `Admin` / `@dm1n2026`. **Cambia esa contraseña de inmediato** (Configuración → Seguridad).
+6. Abre la URL e ingresa con el usuario `Admin` y la contraseña inicial indicada en la Ficha de Documentación. **Cambia esa contraseña de inmediato** (Configuración → Seguridad).
 
 ## Variables
 | Variable | Valor | Para qué |

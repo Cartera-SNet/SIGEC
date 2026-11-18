@@ -23,15 +23,15 @@
             <div class="ok-card">
                 <div class="ok-circle"><i class="bi bi-check-lg"></i></div>
                 <h3>Entrega Registrada con Éxito</h3>
-                <p>El equipo ha sido asignado correctamente al empleado.</p>
+                <p>{{ 'Los equipos han sido asignados' if equipos|length > 1 else 'El equipo ha sido asignado' }} correctamente al empleado.</p>
             </div>
             <div class="kv">
-                <div><span>Equipo:</span><b>{{ a.codigo }} · {{ a.tipo or '' }} {{ a.marca }} {{ a.modelo }}</b></div>
+                {% for e in equipos %}<div><span>{{ 'Equipo:' if equipos|length == 1 else 'Equipo ' ~ loop.index ~ ':' }}</span><b>{{ e.codigo }} · {{ e.tipo or '' }} {{ e.marca }} {{ e.modelo }}</b></div>{% endfor %}
                 <div><span>Empleado:</span><b>{{ a.empleado }}</b></div>
                 <div><span>Fecha:</span><b>{{ a.fecha_asignacion|fecha }}</b></div>
             </div>
             <div style="display:flex;gap:14px">
-                {% if a.acta_id %}<a class="btn btn-primary" href="{{ url_for('imprimir_acta', acta_id=a.acta_id) }}" target="_blank"><i class="bi bi-printer-fill"></i> Imprimir Acta</a>{% endif %}
+                {% if a.acta_id %}<a class="btn btn-primary" href="{{ url_for('imprimir_acta', acta_id=a.acta_id) }}" target="_blank"><i class="bi bi-printer-fill"></i> Imprimir Acta{% if equipos|length > 1 %} ({{ equipos|length }} equipos){% endif %}</a>{% endif %}
                 <a class="btn btn-ghost" href="{{ url_for('asignar_equipo') }}">Volver</a>
             </div>
         </div>

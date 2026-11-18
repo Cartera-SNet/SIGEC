@@ -2,6 +2,37 @@
 (function () {
   var body = document.body;
 
+  // Filtros dinámicos: los formularios con data-auto se aplican solos al cambiar un filtro (sin pulsar el botón)
+  document.querySelectorAll('form[data-auto]').forEach(function (f) {
+    var timer;
+    function enviar(campo) {
+      var d = f.elements.desde, h = f.elements.hasta;
+      if (d && h && d.value && h.value && d.value > h.value) return;           // rango inválido: no se aplica
+      try { sessionStorage.setItem('sigecFoco', JSON.stringify({ n: campo.name, p: location.pathname })); } catch (e) {}
+      f.classList.add('cargando');
+      f.submit();
+    }
+    function programar(campo, ms) { clearTimeout(timer); timer = setTimeout(function () { enviar(campo); }, ms); }
+    f.addEventListener('change', function (e) {
+      var c = e.target;
+      if (!c.name || c.type === 'text' || c.type === 'search') return;         // el texto se aplica al escribir
+      programar(c, c.type === 'date' ? 500 : 50);
+    });
+    f.addEventListener('input', function (e) {
+      var c = e.target;
+      if (c.type === 'text' || c.type === 'search') programar(c, 550);
+    });
+  });
+  // Tras aplicar un filtro de texto, el cursor vuelve al mismo campo para seguir escribiendo
+  try {
+    var foco = JSON.parse(sessionStorage.getItem('sigecFoco') || 'null');
+    sessionStorage.removeItem('sigecFoco');
+    if (foco && foco.p === location.pathname) {
+      var el = document.querySelector('form[data-auto] [name="' + foco.n + '"]');
+      if (el && (el.type === 'text' || el.type === 'search')) { el.focus(); var l = el.value.length; el.setSelectionRange(l, l); }
+    }
+  } catch (e) {}
+
   // Menú lateral (hamburguesa)
   var hamb = document.getElementById('hamb');
   if (hamb) hamb.addEventListener('click', function () {

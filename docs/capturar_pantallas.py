@@ -2,7 +2,7 @@
 Captura las pantallas de SIGEC para el manual (docs/capturas/*.jpg).
 
 Uso (con SIGEC ya ejecutándose y datos de ejemplo cargados):
-    python docs/capturar_pantallas.py http://127.0.0.1:5000 Admin "@dm1n2026"
+    python docs/capturar_pantallas.py http://127.0.0.1:5000 Admin "Admin2026"
 Requiere:  pip install playwright   y un Chrome/Chromium instalado.
 Variable opcional CHROME_PATH para indicar el ejecutable de Chrome.
 Después de capturar, ejecuta:  python docs/generar_manual.py
@@ -19,7 +19,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(AQUI, "capturas")
 base = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:5000").rstrip("/")
 user = sys.argv[2] if len(sys.argv) > 2 else "Admin"
-clave = sys.argv[3] if len(sys.argv) > 3 else "@dm1n2026"
+clave = sys.argv[3] if len(sys.argv) > 3 else "Admin2026"
 os.makedirs(OUT, exist_ok=True)
 
 

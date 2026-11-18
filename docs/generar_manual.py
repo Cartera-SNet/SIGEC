@@ -110,6 +110,9 @@ def construir():
                 w, h = PI.open(ruta).size
                 ancho = A4[0] - 4.4 * cm
                 alto = ancho * h / w
+                if alto > 18 * cm:
+                    alto = 18 * cm
+                    ancho = alto * w / h
                 im = Image(ruta, ancho, alto, hAlign="CENTER")
                 im.hAlign = "CENTER"
                 story.append(KeepTogether([im, Paragraph(inline(m.group(1)), cap)]))

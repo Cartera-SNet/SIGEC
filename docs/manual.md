@@ -29,7 +29,7 @@ La conexión a Neon está en el archivo `.env` (en la carpeta del proyecto), en 
 
 ### 2.4 Primer ingreso: usuario Admin
 
-El sistema trae un administrador principal listo para usar. Usuario: `Admin` y contraseña inicial: `@dm1n2026` (el usuario no distingue mayúsculas de minúsculas, la contraseña sí). Después del primer ingreso cambia la contraseña en Configuración → Seguridad. El usuario Admin es el encargado de todo: no se puede eliminar, desactivar ni quitarle el rol de Administrador.
+El sistema trae un administrador principal listo para usar. Usuario: `Admin`; la contraseña inicial está indicada en la Ficha de Documentación (el usuario no distingue mayúsculas de minúsculas, la contraseña sí). Después del primer ingreso cambia la contraseña en Configuración → Seguridad. El usuario Admin es el encargado de todo: no se puede eliminar, desactivar ni quitarle el rol de Administrador.
 
 ### 2.5 Publicar SIGEC en la nube (Railway)
 
@@ -79,7 +79,7 @@ La campana de arriba muestra avisos pendientes (actas sin firmar y mantenimiento
 
 ### 5.1 Ver y buscar equipos
 
-Entra a Inventario → Equipos. Verás la lista con código, tipo, marca, modelo, estado y a quién está asignado. Usa la barra de búsqueda para encontrar por código (por ejemplo EQ-005), marca, modelo, serie, tipo o nombre del responsable, y el filtro «Todos los estados» para ver solo un estado. Con los filtros de la segunda fila también puedes elegir un tipo de equipo, escribir una ubicación y fijar un rango de fechas de ingreso («Ingreso desde / hasta»); pulsa «Filtrar» y, para borrar los filtros, «Limpiar». La lista se divide en páginas de 10 registros.
+Entra a Inventario → Equipos. Verás la lista con código, tipo, marca, modelo, estado y a quién está asignado. Usa la barra de búsqueda para encontrar por código (por ejemplo EQ-005), marca, modelo, serie, tipo o nombre del responsable, y el filtro «Todos los estados» para ver solo un estado. Con los filtros de la segunda fila también puedes elegir un tipo de equipo, elegir una ubicación de la lista y fijar un rango de fechas de ingreso («Ingreso desde / hasta»); los filtros se aplican solos al elegir una opción, escribir (la búsqueda se actualiza mientras escribes) o cambiar una fecha, sin necesidad de pulsar nada; el botón «Filtrar» queda como alternativa y, para borrar los filtros, «Limpiar». La lista se divide en páginas de 10 registros.
 
 ![Inventario de equipos](capturas/03_inventario.jpg)
 
@@ -88,7 +88,7 @@ El código del equipo se genera solo a partir de su número de registro (EQ-001,
 ### 5.2 Registrar un equipo nuevo
 
 1. Entra a Inventario → Equipos y pulsa «Nuevo Equipo» (o usa Inventario → Registrar equipo).
-2. Elige el tipo y la marca (ambos son listas desplegables) y completa modelo y número de serie. Placa, ubicación y características son opcionales. Si la marca que necesitas no aparece, el Administrador la agrega en Configuración → Catálogos (sección 13.2).
+2. Elige el tipo, la marca y la ubicación (todas son listas desplegables) y completa modelo y número de serie. Placa, ubicación y características son opcionales. Si la marca o la ubicación que necesitas no aparece, el Administrador la agrega en Configuración → Catálogos (sección 13.2). Así todos los equipos quedan escritos de la misma forma.
 3. Pulsa «Registrar Equipo».
 
 ![Formulario para registrar un equipo](capturas/04_nuevo_equipo.jpg)
@@ -123,52 +123,56 @@ Pulsa el nombre del empleado (o el ojo azul) para abrir su ficha: datos, equipos
 
 ![Ficha del empleado](capturas/17_detalle_empleado.jpg)
 
-Entra a Inventario → Empleados. Allí se listan los empleados con documento, nombre, área, cargo, cuántos equipos tienen y su estado. Para registrar uno nuevo pulsa «Nuevo Empleado», completa documento y nombres (obligatorios), elige el área de la lista desplegable y guarda. El documento no se puede repetir. Las áreas las mantiene el Administrador en Configuración → Catálogos (sección 13.2).
+Entra a Inventario → Empleados. Allí se listan los empleados con documento, nombre, área, cargo, cuántos equipos tienen y su estado. Para registrar uno nuevo pulsa «Nuevo Empleado», completa documento, nombres y correo (obligatorios), elige el área y el cargo de las listas desplegables y guarda. El documento no se puede repetir y el correo debe ser válido (por ejemplo nombre@empresa.com); es un dato de contacto y no se usa para iniciar sesión. Las áreas y los cargos los mantiene el Administrador en Configuración → Catálogos (sección 13.2).
+
+![Formulario para registrar un empleado](capturas/21_nuevo_empleado.jpg)
+
+Sin importar cómo se escriba, SIGEC guarda los nombres y apellidos con la primera letra de cada palabra en mayúscula y el resto en minúscula («julian VENEGAS» se ve siempre como «Julian Venegas»), conservando conectores como «de» o «del» en minúscula, y guarda el correo en minúsculas. Los empleados antiguos que no tenían correo recibieron uno provisional con su nombre (nombre.apellido@ejemplo.com); corrígelo la próxima vez que edites su ficha.
 
 ![Lista de empleados](capturas/13_empleados.jpg)
 
 Solo se pueden asignar equipos a empleados en estado Activo (regla RN-05). No se puede inactivar a un empleado que todavía tiene equipos asignados: primero registra las devoluciones.
 
-## 7. Asignar un equipo a un empleado
+## 7. Asignar equipos a un empleado
 
 1. Entra a Asignaciones.
-2. En «Datos de la Asignación» elige el empleado y el equipo. También puedes pulsar el botón azul «+» en la lista de «Equipos Disponibles» de la derecha para elegir el equipo rápidamente; el buscador filtra esa lista.
+2. En «Datos de la Asignación» elige el empleado y agrega uno o varios equipos: elígelos en la lista «Agregar un equipo…» o pulsa el botón azul «+» en la lista de «Equipos Disponibles» de la derecha (el buscador filtra esa lista y «Agregar todos los que se ven» suma los que estén visibles). Cada equipo elegido aparece como una etiqueta que se quita con la «×» (o pulsando de nuevo el botón, que ahora muestra ✓).
 3. Confirma la fecha de asignación (no puede ser futura) y escribe observaciones si hace falta.
-4. Pulsa «Asignar Equipo».
+4. Pulsa «Asignar Equipo» (el botón indica cuántos: «Asignar 3 equipos»).
 
 ![Asignación de equipos](capturas/05_asignar.jpg)
 
-Solo se pueden asignar equipos en estado Disponible (regla RN-01). Al asignar, el equipo pasa a Asignado, se genera automáticamente el acta de entrega (pendiente de firma) y se registra el movimiento en el historial.
+Solo se pueden asignar equipos en estado Disponible (regla RN-01). Al asignar, los equipos pasan a Asignado, se genera automáticamente **una sola acta de entrega** que lista todos los equipos de esa entrega (pendiente de firma, con una sola firma) y se registra el movimiento en el historial de cada equipo. Si alguno de los equipos elegidos dejó de estar Disponible, no se asigna ninguno y SIGEC lo avisa, para que la entrega nunca quede a medias. Una entrega admite hasta 30 equipos. Cada equipo conserva su propia asignación, así que después puedes devolver uno solo sin afectar a los demás.
 
 ## 8. Registro de entrega y actas
 
 ### 8.1 Pantalla «Registro de Entrega»
 
-Después de asignar, SIGEC muestra «Entrega Registrada con Éxito» con el equipo, el empleado y la fecha. Desde allí pulsa «Imprimir Acta» para abrir el acta lista para imprimir o guardar como PDF, o «Volver» para seguir asignando.
+Después de asignar, SIGEC muestra «Entrega Registrada con Éxito» con los equipos entregados, el empleado y la fecha. Desde allí pulsa «Imprimir Acta» para abrir el acta lista para imprimir o guardar como PDF, o «Volver» para seguir asignando.
 
 ![Registro de entrega exitoso](capturas/06_entrega.jpg)
 
 ### 8.2 Lista de actas
 
-Entra a Inventario → Actas de entrega. Puedes filtrar por Todas, Pendientes o Firmadas. Cada acta tiene su número, el equipo, el empleado y su estado.
+Entra a Inventario → Actas de entrega. Puedes filtrar por Todas, Pendientes o Firmadas. Cada acta tiene su número, el equipo (o los equipos, con su cantidad, si la entrega fue de varios), el empleado y su estado.
 
 ![Lista de actas de entrega](capturas/07_actas.jpg)
 
 ### 8.3 Firmar un acta
 
-Pulsa el botón verde de la pluma en la fila del acta. Se abre la pantalla «Firmar Acta de Entrega»: confirma quién firma, adjunta si quieres la evidencia (foto PNG/JPG o PDF del acta firmada, máximo 5 MB), escribe observaciones y pulsa «Registrar firma». Solo se puede firmar si la asignación sigue activa (regla RN-04). El acta queda en estado Firmada con fecha y quien firmó; la evidencia se ve con el icono del clip y la firma queda en el historial del equipo. Un usuario con rol Empleado puede firmar sus propias actas. Las actas pendientes aparecen como aviso en la campana.
+Pulsa el botón verde de la pluma en la fila del acta. Se abre la pantalla «Firmar Acta de Entrega»: confirma quién firma, adjunta si quieres la evidencia (foto PNG/JPG o PDF del acta firmada, máximo 5 MB), escribe observaciones y pulsa «Registrar firma». Si la entrega incluye varios equipos, la pantalla los lista todos y una sola firma cubre la entrega completa. Solo se puede firmar si al menos una de las asignaciones del acta sigue activa (regla RN-04). El acta queda en estado Firmada con fecha y quien firmó; la evidencia se ve con el icono del clip y la firma queda en el historial de cada equipo. Un usuario con rol Empleado puede firmar sus propias actas. Las actas pendientes aparecen como aviso en la campana.
 
 ![Firma de un acta](capturas/16_firmar_acta.jpg)
 
 ### 8.4 Imprimir un acta
 
-Pulsa el icono de impresora en la fila del acta. Se abre una hoja con los datos del equipo, del responsable y los espacios de firma. Usa el botón «Imprimir / Guardar como PDF».
+Pulsa el icono de impresora en la fila del acta. Se abre una hoja con los datos del equipo (o una tabla con todos los equipos entregados), del responsable y los espacios de firma. Usa el botón «Imprimir / Guardar como PDF».
 
 ![Acta de entrega lista para imprimir](capturas/08_acta_imprimir.jpg)
 
 ## 9. Devolver un equipo
 
-Hay dos caminos. En Asignaciones, en la tabla «Asignaciones activas», pulsa «Registrar devolución» en la fila del equipo. O abre el detalle del equipo y pulsa «Registrar devolución». Confirma. Antes de pulsar «Registrar devolución» elige el destino del equipo (A Disponible, A En recepción o A Mantenimiento). La asignación se cierra y el historial queda registrado.
+Hay dos caminos. En Asignaciones, en la tabla «Asignaciones activas», pulsa «Registrar devolución» en la fila del equipo. O abre el detalle del equipo y pulsa «Registrar devolución». Confirma. Antes de pulsar «Registrar devolución» elige el destino del equipo (A Disponible, A En recepción o A Mantenimiento). La asignación se cierra y el historial queda registrado. Si el equipo hacía parte de una entrega de varios equipos, se devuelve solo ese: los demás siguen asignados al empleado y su acta no cambia.
 
 ## 10. Mantenimientos
 
@@ -194,7 +198,7 @@ El usuario con rol Mantenimiento solo ve el módulo Mantenimientos (no ve invent
 
 ## 11. Reportes
 
-Entra a Reportes. Elige el rango de fechas (desde y hasta) y pulsa «Generar Reporte». Si quieres, elige también un usuario (empleado) o un equipo en las listas desplegables: el reporte se limita a esa persona o a ese equipo (con «Quitar filtros» vuelves al reporte general). Verás la gráfica «Equipos por Estado», la gráfica «Equipos por Tipo», las tablas de asignaciones, mantenimientos (con su responsable) y movimientos dentro del rango y los indicadores: tasa de mantenimiento (equipos con mantenimiento en el rango sobre el total), asignaciones cerradas, actas pendientes de firma con sus días de espera, equipos asignados por área y equipos sin movimiento (más de 90 días por defecto; el umbral se cambia en Configuración → Respaldos).
+Entra a Reportes. Elige el rango de fechas (desde y hasta): el reporte se actualiza solo al cambiar una fecha, un usuario o un equipo, sin pulsar nada (si «desde» es posterior a «hasta», no se aplica hasta corregirlo); «Generar Reporte» queda como alternativa. Si quieres, elige también un usuario (empleado) o un equipo en las listas desplegables: el reporte se limita a esa persona o a ese equipo (con «Quitar filtros» vuelves al reporte general). Verás la gráfica «Equipos por Estado», la gráfica «Equipos por Tipo», las tablas de asignaciones, mantenimientos (con su responsable) y movimientos dentro del rango y los indicadores: tasa de mantenimiento (equipos con mantenimiento en el rango sobre el total), asignaciones cerradas, actas pendientes de firma con sus días de espera, equipos asignados por área y equipos sin movimiento (más de 90 días por defecto; el umbral se cambia en Configuración → Respaldos).
 
 ![Reportes e indicadores](capturas/10_reportes.jpg)
 
@@ -208,7 +212,7 @@ Pulsa «Exportar PDF» o «Exportar Excel» (abajo de la pantalla). Se descarga 
 
 ### 12.1 Crear un usuario
 
-Solo el Administrador ve la sección Usuarios. Pulsa «Nuevo Usuario», escribe usuario (3 a 30 caracteres: letras, números, punto, guion), nombre, rol, una contraseña de mínimo 8 caracteres y, si quieres, el empleado vinculado. Para el rol Empleado es obligatorio tener ficha de empleado: elige uno existente o escribe el documento y SIGEC crea la ficha con el nombre completo y la vincula, de modo que la persona vea sus equipos desde su primer ingreso. El usuario no se puede repetir y un empleado solo se vincula a un usuario.
+Solo el Administrador ve la sección Usuarios. Pulsa «Nuevo Usuario», escribe usuario (3 a 30 caracteres: letras, números, punto, guion), nombre, rol, una contraseña de mínimo 8 caracteres y, si quieres, el empleado vinculado. El nombre completo se guarda con la primera letra de cada palabra en mayúscula. Para el rol Empleado es obligatorio tener ficha de empleado: elige uno existente o escribe el documento y el correo del empleado (dato de contacto; no se usa para iniciar sesión) y SIGEC crea la ficha con el nombre completo y la vincula, de modo que la persona vea sus equipos desde su primer ingreso. El usuario no se puede repetir y un empleado solo se vincula a un usuario.
 
 ![Usuarios y roles](capturas/11_usuarios.jpg)
 
@@ -244,9 +248,9 @@ Muestra el nombre del sistema y la versión, y permite cambiar el nombre de la E
 
 ### 13.2 Catálogos
 
-En la pestaña Catálogos el Administrador mantiene los tipos de equipo, los estados de equipo, las marcas y las áreas (crear, renombrar, activar o desactivar). Las marcas y las áreas son las listas desplegables de los formularios de equipos y de empleados: lo que se agregue aquí aparece de inmediato allí, un nombre cambiado se actualiza también en los registros que lo usan, y una opción desactivada deja de ofrecerse sin alterar lo ya guardado. Los cinco estados base (Disponible, Asignado, En Mantenimiento, En recepción y Dado de baja) están protegidos: no se renombran ni se desactivan (regla RN-12). Un estado propio, por ejemplo «En investigación», se puede crear, renombrar y desactivar si no tiene equipos.
+En la pestaña Catálogos el Administrador mantiene los tipos de equipo, los estados de equipo, las marcas, las áreas, las ubicaciones y los cargos (crear, renombrar, activar o desactivar). Las marcas, áreas, ubicaciones y cargos son las listas desplegables de los formularios de equipos y de empleados (marca y ubicación en equipos; área y cargo en empleados): lo que se agregue aquí aparece de inmediato allí, un nombre cambiado se actualiza también en los registros que lo usan, y una opción desactivada deja de ofrecerse sin alterar lo ya guardado. Los cinco estados base (Disponible, Asignado, En Mantenimiento, En recepción y Dado de baja) están protegidos: no se renombran ni se desactivan (regla RN-12). Un estado propio, por ejemplo «En investigación», se puede crear, renombrar y desactivar si no tiene equipos. Los nombres de marcas, áreas, ubicaciones y cargos se guardan siempre con la primera letra de cada palabra en mayúscula («almacen» queda «Almacen»); las siglas de hasta 3 letras escritas en mayúsculas (TI, HP, LG) y las abreviaturas con puntos (RR.HH.) se respetan. SIGEC no puede agregar tildes por sí solo: si quieres «Almacén», renómbralo aquí y se actualiza en todos los registros. Los valores que ya existían en equipos y empleados pasaron automáticamente a estos catálogos.
 
-![Catálogos de tipos y estados](capturas/19_catalogos.jpg)
+![Catálogos de tipos, estados, marcas, áreas, ubicaciones y cargos](capturas/19_catalogos.jpg)
 
 ### 13.3 Notificaciones
 
@@ -298,7 +302,7 @@ No compartas la clave por chat ni correo; si se expone, revócala en la consola 
 
 ## 15. Reglas de negocio
 
-RN-01: solo se pueden asignar equipos en estado Disponible. RN-05: solo se asigna a empleados activos. RN-08: el número de serie de un equipo es único. RN-06: todo cambio de estado exige un motivo. RN-07: al devolver, el operador elige si el equipo queda Disponible, En recepción o En Mantenimiento. RN-12: los estados base están protegidos. Además: un equipo asignado o en mantenimiento no se puede dar de baja y la baja es definitiva; no se inactiva a un empleado con equipos asignados; toda asignación genera un acta pendiente de firma; y todo movimiento queda en el historial con fecha y usuario.
+RN-01: solo se pueden asignar equipos en estado Disponible. RN-05: solo se asigna a empleados activos. RN-08: el número de serie de un equipo es único. RN-06: todo cambio de estado exige un motivo. RN-07: al devolver, el operador elige si el equipo queda Disponible, En recepción o En Mantenimiento. RN-12: los estados base están protegidos. Además: un equipo asignado o en mantenimiento no se puede dar de baja y la baja es definitiva; no se inactiva a un empleado con equipos asignados; toda entrega (de uno o varios equipos) genera una sola acta pendiente de firma; el correo del empleado es obligatorio; y todo movimiento queda en el historial con fecha y usuario.
 
 ## 16. Solución de problemas
 
@@ -326,7 +330,7 @@ Revisa que `ANTHROPIC_API_KEY` esté definida y sea válida, y que la casilla «
 
 ### 16.6 Aparece el aviso «Sigues usando la contraseña inicial del usuario Admin»
 
-Es una advertencia de seguridad: la contraseña inicial está escrita en este manual. Cámbiala en Configuración → Seguridad y el aviso desaparece.
+Es una advertencia de seguridad: la contraseña inicial del Admin es conocida por quienes tienen la ficha de documentación. Cámbiala en Configuración → Seguridad y el aviso desaparece.
 
 ### 16.5 «La sesión del formulario expiró»
 
@@ -342,4 +346,4 @@ Es normal: significa que no hay Ollama activo y responde con el motor incluido. 
 
 ## 17. Historial de versiones del manual
 
-Versión 1.0 (18/11/2026): primera versión completa del sistema y de este manual, alineada con la Ficha de Documentación (v1.0). Incluye diseño visual compacto, roles y permisos (con el rol Mantenimiento y responsable de cada mantenimiento), usuarios con foto, equipos, empleados, catálogos de tipos, estados, marcas y áreas con listas desplegables, asignaciones, cambio de estado con motivo, firma de actas con evidencia, reportes con filtros por usuario y equipo y movimientos, respaldo automático, asistente de IA (motor interno y Ollama locales, y motor opcional con Claude con herramientas de solo lectura), modo responsive para celulares y publicación en Railway. Se agregaron además textos guía en el inicio de sesión, el aviso de contraseña inicial del Admin, cabeceras de seguridad, el restablecimiento de contraseñas con clave temporal y cambio obligatorio, y se corrigió la eliminación de usuarios con mantenimientos asignados.
+Versión 1.0 (18/11/2026): primera versión completa del sistema y de este manual, alineada con la Ficha de Documentación (v1.0). Incluye diseño visual compacto, roles y permisos (con el rol Mantenimiento y responsable de cada mantenimiento), usuarios con foto, equipos, empleados, catálogos de tipos, estados, marcas y áreas con listas desplegables, asignaciones, cambio de estado con motivo, firma de actas con evidencia, reportes con filtros por usuario y equipo y movimientos, respaldo automático, asistente de IA (motor interno y Ollama locales, y motor opcional con Claude con herramientas de solo lectura), modo responsive para celulares y publicación en Railway. Se agregaron además los catálogos de ubicación y cargo, el correo obligatorio, los textos con mayúsculas automáticas, la asignación de varios equipos con una sola acta, filtros dinámicos en Equipos, Empleados y Reportes, textos guía en el inicio de sesión, el aviso de contraseña inicial del Admin, cabeceras de seguridad, el restablecimiento de contraseñas con clave temporal y cambio obligatorio, y se corrigió la eliminación de usuarios con mantenimientos asignados.

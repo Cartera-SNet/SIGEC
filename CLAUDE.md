@@ -43,7 +43,7 @@ azul de acción (#1a6cff) y tipografía Roboto (incluida localmente en `static/v
 
 - Las claves (`DATABASE_URL`, `SECRET_KEY`) viven solo en `.env`. Nunca en el código ni en el manual.
 - Toda ruta POST lleva token CSRF; toda ruta está protegida por sesión y rol (`@requiere(...)`).
-- El usuario `Admin` (contraseña inicial `@dm1n2026`) es el administrador principal: no se elimina ni se desactiva.
+- El usuario `Admin` (contraseña inicial definida en `db.ADMIN_PASS` y escrita solo en la ficha Word, no en el manual) es el administrador principal: no se elimina ni se desactiva.
 
 ## Mapa rápido
 

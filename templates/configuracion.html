@@ -64,7 +64,11 @@
         {{ catalogo('marca', 'Marcas', marcas, 'Nueva marca (ej: Dell)') }}
         {{ catalogo('area', 'Áreas', areas, 'Nueva área (ej: Contabilidad)') }}
     </div>
-    <div class="hint" style="margin-top:10px">Las marcas y las áreas aparecen como listas desplegables en los formularios de equipos y empleados. Al desactivar una opción deja de ofrecerse, pero los registros que ya la tienen no cambian.</div>
+    <div class="cols-2" style="margin-top:20px">
+        {{ catalogo('ubicacion', 'Ubicaciones', ubicaciones, 'Nueva ubicación (ej: Bodega)') }}
+        {{ catalogo('cargo', 'Cargos', cargos, 'Nuevo cargo (ej: Analista)') }}
+    </div>
+    <div class="hint" style="margin-top:10px">Las marcas, áreas, ubicaciones y cargos aparecen como listas desplegables en los formularios de equipos y empleados, y siempre se guardan con la primera letra de cada palabra en mayúscula (las siglas de hasta 3 letras como TI o HP se respetan). Al desactivar una opción deja de ofrecerse, pero los registros que ya la tienen no cambian.</div>
 
     {% elif tab == 'notificaciones' %}
     <form method="post" action="{{ url_for('guardar_notificaciones') }}" class="sub-card" style="max-width:720px">{{ csrf() }}

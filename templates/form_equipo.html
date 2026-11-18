@@ -19,7 +19,10 @@
             <div class="fg"><label>Modelo <span class="req">*</span></label><input class="inp" name="modelo" value="{{ d.modelo or '' }}" required placeholder="Ej: EliteBook 840"></div>
             <div class="fg"><label>Número de serie <span class="req">*</span></label><input class="inp" name="numero_serie" value="{{ d.numero_serie or '' }}" required placeholder="Número único (RN-08)"></div>
             <div class="fg"><label>Placa interna</label><input class="inp" name="placa" value="{{ d.placa or '' }}" placeholder="Opcional"></div>
-            <div class="fg"><label>Ubicación</label><input class="inp" name="ubicacion" value="{{ d.ubicacion or '' }}" placeholder="Ej: Oficina 2, Bodega"></div>
+            <div class="fg"><label>Ubicación</label>
+                <select class="sel" name="ubicacion"><option value="">Sin ubicación</option>
+                {% for u in opciones('ubicacion', d.ubicacion) %}<option {{ 'selected' if (d.ubicacion or '')|lower == u|lower }}>{{ u }}</option>{% endfor %}</select>
+                {% if puede('admin') %}<div class="hint">¿Falta una? Agrégala en <a href="{{ url_for('configuracion', tab='catalogos') }}">Configuración › Catálogos</a>.</div>{% endif %}</div>
             <div class="fg"><label>Características</label><input class="inp" name="caracteristicas" value="{{ d.caracteristicas or '' }}" placeholder="Ej: i5, 16GB RAM, 512GB SSD"></div>
         </div>
         <div class="fg"><label>Observaciones</label><textarea class="txt" name="observaciones" placeholder="Notas adicionales...">{{ d.observaciones or '' }}</textarea></div>

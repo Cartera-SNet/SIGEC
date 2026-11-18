@@ -3,7 +3,7 @@
 {% block title %}Empleados{% endblock %}
 {% block content %}
 <div class="panel">
-    <form class="toolbar" method="get">
+    <form class="toolbar" method="get" data-auto>
         <label class="search"><i class="bi bi-search"></i><input name="q" value="{{ texto }}" placeholder="Buscar por nombre, documento, área o cargo..." autocomplete="off"></label>
         {% if puede('gestionar') %}<a class="btn btn-primary" href="{{ url_for('nuevo_empleado') }}"><i class="bi bi-plus-lg"></i> Nuevo Empleado</a>{% endif %}
     </form>

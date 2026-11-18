@@ -9,6 +9,12 @@ Primera versión completa del sistema, alineada con la Ficha de Documentación e
 - Catálogos de **marca** y **área** con listas desplegables en los formularios de equipos y empleados.
 - Reportes con filtro por **usuario** o **equipo**, tabla y hoja de **movimientos**, y responsable en mantenimientos.
 - Diseño más compacto en escritorio.
+- Nueva contraseña inicial del Admin (se indica solo en la Ficha de Documentación).
+- Catálogos de **ubicación** y **cargo** (listas desplegables en equipos y empleados, con los valores existentes importados) y filtro de ubicación en el inventario como lista.
+- **Correo obligatorio** en empleados (con validación de formato); las fichas antiguas sin correo reciben uno provisional asociado a su nombre.
+- Mayúsculas automáticas: nombres y apellidos («Julian Venegas») y catálogos con primera letra en mayúscula (siglas de 3 letras o menos y abreviaturas con puntos se respetan); los datos existentes se corrigen al arrancar.
+- **Asignación de varios equipos en una sola entrega**, con una sola acta que los lista y una sola firma; cada equipo conserva su asignación y se puede devolver por separado.
+- Filtros dinámicos: Equipos, Empleados y Reportes se actualizan solos al cambiar un filtro (sin pulsar el botón).
 - Textos guía en el inicio de sesión («Digite su usuario» / «Digite su contraseña»).
 - Contraseña olvidada: el Administrador genera una clave temporal aleatoria (se muestra una vez) y la persona debe cambiarla al ingresar; recuperación del Admin con la variable `ADMIN_RESET_PASSWORD`.
 - Aviso de contraseña inicial del Admin, cabeceras de seguridad y corrección al eliminar usuarios con mantenimientos asignados.

@@ -8,16 +8,20 @@
         <div class="form-grid">
             <div class="fg"><label>Documento <span class="req">*</span></label><input class="inp" name="documento" value="{{ d.documento or '' }}" required></div>
             <div class="fg"><label>Estado</label><select class="sel" name="estado"><option value="activo" {{ 'selected' if d.estado != 'inactivo' }}>Activo</option><option value="inactivo" {{ 'selected' if d.estado == 'inactivo' }}>Inactivo</option></select></div>
-            <div class="fg"><label>Nombres <span class="req">*</span></label><input class="inp" name="nombres" value="{{ d.nombres or '' }}" required></div>
-            <div class="fg"><label>Apellidos</label><input class="inp" name="apellidos" value="{{ d.apellidos or '' }}"></div>
+            <div class="fg"><label>Nombres <span class="req">*</span></label><input class="inp" name="nombres" value="{{ d.nombres or '' }}" required placeholder="Ej: Juan Carlos"></div>
+            <div class="fg"><label>Apellidos</label><input class="inp" name="apellidos" value="{{ d.apellidos or '' }}" placeholder="Ej: Pérez Gómez"></div>
             <div class="fg"><label>Área</label>
                 <select class="sel" name="area"><option value="">Sin área</option>
                 {% for a in opciones('area', d.area) %}<option {{ 'selected' if (d.area or '')|lower == a|lower }}>{{ a }}</option>{% endfor %}</select>
                 {% if puede('admin') %}<div class="hint">¿Falta una? Agrégala en <a href="{{ url_for('configuracion', tab='catalogos') }}">Configuración › Catálogos</a>.</div>{% endif %}</div>
-            <div class="fg"><label>Cargo</label><input class="inp" name="cargo" value="{{ d.cargo or '' }}"></div>
-            <div class="fg"><label>Correo</label><input class="inp" type="email" name="correo" value="{{ d.correo or '' }}"></div>
+            <div class="fg"><label>Cargo</label>
+                <select class="sel" name="cargo"><option value="">Sin cargo</option>
+                {% for c in opciones('cargo', d.cargo) %}<option {{ 'selected' if (d.cargo or '')|lower == c|lower }}>{{ c }}</option>{% endfor %}</select>
+                {% if puede('admin') %}<div class="hint">¿Falta uno? Agrégalo en <a href="{{ url_for('configuracion', tab='catalogos') }}">Configuración › Catálogos</a>.</div>{% endif %}</div>
+            <div class="fg"><label>Correo <span class="req">*</span></label><input class="inp" type="email" name="correo" value="{{ d.correo or '' }}" required maxlength="120" placeholder="nombre@empresa.com"></div>
             <div class="fg"><label>Teléfono</label><input class="inp" name="telefono" value="{{ d.telefono or '' }}"></div>
         </div>
+        <div class="hint" style="margin-bottom:14px">Los nombres y apellidos se guardan siempre con la primera letra en mayúscula y el resto en minúscula, y el correo en minúsculas, sin importar cómo se escriban.</div>
         <div style="display:flex;gap:12px"><button class="btn btn-primary"><i class="bi bi-check-lg"></i> {{ 'Guardar cambios' if editar else 'Registrar Empleado' }}</button><a class="btn btn-ghost" href="{{ url_for('listar_empleados') }}">Cancelar</a></div>
     </form>
 </div>

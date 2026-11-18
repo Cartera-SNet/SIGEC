@@ -21,6 +21,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 import db
 import asistente
+import textos
 import informes
 
 VERSION = "1.0"
@@ -63,13 +64,15 @@ ZONAS = {
 }
 CODIGO = "'EQ-' || LPAD({a}.id::text, 3, '0')"
 POR_PAGINA = 10
+MAX_EQUIPOS_ENTREGA = 30  # equipos por entrega (una acta)
 EMPLEADO_OK = {"login", "logout", "cambiar_password", "clave_obligatoria", "mis_equipos", "listar_actas", "firmar_acta", "evidencia_acta",
                "imprimir_acta", "detalle_empleado", "manual", "subir_foto", "quitar_foto", "ver_foto", "api_asistente", "api_asistente_estado", "static"}
 # El rol Mantenimiento solo accede al módulo de mantenimientos (y a su perfil, manual y asistente).
 MANT_OK = {"login", "logout", "cambiar_password", "clave_obligatoria", "mantenimiento", "completar_mantenimiento", "manual", "subir_foto",
            "quitar_foto", "ver_foto", "api_asistente", "api_asistente_estado", "static"}
 # Catálogos de listas desplegables: nombre -> (tabla donde se usa, columna, etiqueta)
-CATALOGOS = {"marca": ("equipo", "marca", "marca"), "area": ("empleado", "area", "área")}
+CATALOGOS = {"marca": ("equipo", "marca", "marca"), "area": ("empleado", "area", "área"),
+             "ubicacion": ("equipo", "ubicacion", "ubicación"), "cargo": ("empleado", "cargo", "cargo")}
 ESTADOS_BASE = {"Disponible", "Asignado", "En Mantenimiento", "En recepción", "Dado de baja"}
 # En la nube (Railway) el disco del contenedor es temporal: DATA_DIR apunta a un volumen persistente (p. ej. /data)
 DATA_DIR = os.environ.get("DATA_DIR") or db.BASE_DIR
@@ -317,6 +320,14 @@ def opciones(cat, actual=None):
     return nombres
 
 
+def _canonico(cat, valor):
+    """El nombre tal como está en el catálogo (mismas mayúsculas); si no existe, el valor recibido."""
+    if not valor:
+        return valor
+    r = q1(f"SELECT nombre FROM {cat} WHERE lower(nombre) = lower(%s)", (valor,))
+    return r["nombre"] if r else valor
+
+
 def _en_catalogo(cat, valor, actual=None):
     """True si el valor está vacío, es el que ya tenía el registro, o es una opción activa del catálogo."""
     if not valor or (actual and valor.lower() == actual.lower()):
@@ -362,7 +373,7 @@ def login():
                 session["username"] = u["username"]
                 session.permanent = True
                 csrf_token()
-                # Aviso en pantalla mientras el administrador principal siga con la clave inicial publicada en el manual
+                # Aviso en pantalla mientras el administrador principal siga con la clave inicial (la de la ficha de documentación)
                 if _es_admin_principal(u) and check_password_hash(u["password_hash"], db.ADMIN_PASS):
                     session["clave_inicial"] = True
                 return redirect(_next_seguro(request.args.get("next")))
@@ -578,8 +589,8 @@ def _filtros_equipos():
         where.append("e.tipo_id = %s")
         params.append(int(tipo))
     if ubicacion:
-        where.append("e.ubicacion ILIKE %s")
-        params.append(f"%{ubicacion}%")
+        where.append("lower(e.ubicacion) = lower(%s)")
+        params.append(ubicacion)
     if desde:
         where.append("e.fecha_ingreso >= %s")
         params.append(datetime.combine(desde, datetime.min.time()))
@@ -625,8 +636,10 @@ def _placa_duplicada(placa, excluir=None):
 
 def _form_equipo():
     f = request.form
-    return {k: f.get(k, "").strip() for k in
-            ("tipo_id", "estado", "marca", "modelo", "numero_serie", "placa", "ubicacion", "caracteristicas", "observaciones")}
+    d = {k: f.get(k, "").strip() for k in
+         ("tipo_id", "estado", "marca", "modelo", "numero_serie", "placa", "ubicacion", "caracteristicas", "observaciones")}
+    d["marca"], d["ubicacion"] = _canonico("marca", d["marca"]), _canonico("ubicacion", d["ubicacion"])
+    return d
 
 
 @app.route("/equipos/nuevo", methods=["GET", "POST"])
@@ -639,6 +652,8 @@ def nuevo_equipo():
             flash("Tipo, marca, modelo y número de serie son obligatorios.", "danger")
         elif not _en_catalogo("marca", d["marca"]):
             flash("Selecciona una marca de la lista (el administrador puede agregar más en Configuración › Catálogos).", "danger")
+        elif not _en_catalogo("ubicacion", d["ubicacion"]):
+            flash("Selecciona una ubicación de la lista (el administrador puede agregar más en Configuración › Catálogos).", "danger")
         elif q1("SELECT id FROM equipo WHERE lower(numero_serie) = lower(%s)", (d["numero_serie"],)):
             flash("Error: el número de serie ya existe (RN-08).", "danger")
         elif _placa_duplicada(d["placa"]):
@@ -681,6 +696,8 @@ def editar_equipo(equipo_id):
             flash("Tipo, marca, modelo y número de serie son obligatorios.", "danger")
         elif not _en_catalogo("marca", d["marca"], e["marca"]):
             flash("Selecciona una marca de la lista (el administrador puede agregar más en Configuración › Catálogos).", "danger")
+        elif not _en_catalogo("ubicacion", d["ubicacion"], e["ubicacion"]):
+            flash("Selecciona una ubicación de la lista (el administrador puede agregar más en Configuración › Catálogos).", "danger")
         elif q1("SELECT id FROM equipo WHERE lower(numero_serie) = lower(%s) AND id <> %s", (d["numero_serie"], equipo_id)):
             flash("Error: el número de serie ya existe (RN-08).", "danger")
         elif _placa_duplicada(d["placa"], equipo_id):
@@ -803,8 +820,7 @@ def detalle_empleado(emp_id):
 def _equipos_de(emp_id):
     base = f"""SELECT a.id, a.fecha_asignacion, a.fecha_devolucion, a.estado, {CODIGO.format(a='e')} AS codigo,
                       e.id AS equipo_id, e.numero_serie, t.nombre AS tipo, e.marca, e.modelo,
-                      (SELECT ac.id FROM acta ac WHERE ac.asignacion_id = a.id ORDER BY ac.id LIMIT 1) AS acta_id,
-                      (SELECT ac.estado FROM acta ac WHERE ac.asignacion_id = a.id ORDER BY ac.id LIMIT 1) AS acta_estado
+                      a.acta_id, (SELECT ac.estado FROM acta ac WHERE ac.id = a.acta_id) AS acta_estado
                FROM asignacion a JOIN equipo e ON e.id = a.equipo_id LEFT JOIN tipo_equipo t ON t.id = e.tipo_id
                WHERE a.empleado_id = %s AND a.estado = %s ORDER BY a.fecha_asignacion DESC"""
     return {"activas": q(base, (emp_id, "activa")), "historico": q(base, (emp_id, "cerrada"))}
@@ -818,8 +834,29 @@ def mis_equipos():
 
 
 def _form_empleado():
-    return {k: request.form.get(k, "").strip() for k in
-            ("documento", "nombres", "apellidos", "area", "cargo", "correo", "telefono", "estado")}
+    d = {k: request.form.get(k, "").strip() for k in
+         ("documento", "nombres", "apellidos", "area", "cargo", "correo", "telefono", "estado")}
+    d["nombres"], d["apellidos"] = textos.nombre_propio(d["nombres"]), textos.nombre_propio(d["apellidos"])  # «JULIAN venegas» -> «Julian Venegas»
+    d["correo"] = textos.correo(d["correo"])
+    d["area"], d["cargo"] = _canonico("area", d["area"]), _canonico("cargo", d["cargo"])
+    return d
+
+
+def _validar_empleado(d, emp=None):
+    """Mensaje de error del formulario de empleado, o None si todo está bien."""
+    if not d["documento"] or not d["nombres"]:
+        return "Documento y nombres son obligatorios."
+    if not d["correo"]:
+        return "El correo es obligatorio."
+    if not textos.correo_valido(d["correo"]):
+        return "Escribe un correo válido (por ejemplo nombre@empresa.com)."
+    if not _en_catalogo("area", d["area"], emp["area"] if emp else None):
+        return "Selecciona un área de la lista (el administrador puede agregar más en Configuración › Catálogos)."
+    if not _en_catalogo("cargo", d["cargo"], emp["cargo"] if emp else None):
+        return "Selecciona un cargo de la lista (el administrador puede agregar más en Configuración › Catálogos)."
+    if q1("SELECT id FROM empleado WHERE documento = %s AND id <> %s", (d["documento"], emp["id"] if emp else 0)):
+        return "Ya existe un empleado con ese documento." if not emp else "Ya existe otro empleado con ese documento."
+    return None
 
 
 @app.route("/empleados/nuevo", methods=["GET", "POST"])
@@ -827,12 +864,9 @@ def _form_empleado():
 def nuevo_empleado():
     if request.method == "POST":
         d = _form_empleado()
-        if not d["documento"] or not d["nombres"]:
-            flash("Documento y nombres son obligatorios.", "danger")
-        elif not _en_catalogo("area", d["area"]):
-            flash("Selecciona un área de la lista (el administrador puede agregar más en Configuración › Catálogos).", "danger")
-        elif q1("SELECT id FROM empleado WHERE documento = %s", (d["documento"],)):
-            flash("Ya existe un empleado con ese documento.", "danger")
+        error = _validar_empleado(d)
+        if error:
+            flash(error, "danger")
         else:
             ex("""INSERT INTO empleado (documento, nombres, apellidos, area, cargo, correo, telefono, estado, fecha_ingreso)
                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
@@ -854,12 +888,9 @@ def editar_empleado(emp_id):
     if request.method == "POST":
         d = _form_empleado()
         activos = q1("SELECT COUNT(*) AS c FROM asignacion WHERE empleado_id=%s AND estado='activa'", (emp_id,))["c"]
-        if not d["documento"] or not d["nombres"]:
-            flash("Documento y nombres son obligatorios.", "danger")
-        elif not _en_catalogo("area", d["area"], emp["area"]):
-            flash("Selecciona un área de la lista (el administrador puede agregar más en Configuración › Catálogos).", "danger")
-        elif q1("SELECT id FROM empleado WHERE documento = %s AND id <> %s", (d["documento"], emp_id)):
-            flash("Ya existe otro empleado con ese documento.", "danger")
+        error = _validar_empleado(d, emp)
+        if error:
+            flash(error, "danger")
         elif d["estado"] == "inactivo" and activos:
             flash("No se puede inactivar a un empleado con equipos asignados. Registra primero las devoluciones.", "danger")
         else:
@@ -879,10 +910,13 @@ def editar_empleado(emp_id):
 @requiere("gestionar")
 def asignar_equipo():
     if request.method == "POST":
-        equipo_id = request.form.get("equipo_id", "")
+        ids = sorted({int(x) for x in request.form.getlist("equipo_id") if x.isdigit()})
         empleado_id = request.form.get("empleado_id", "")
-        if not equipo_id.isdigit() or not empleado_id.isdigit():
-            flash("Selecciona un empleado y un equipo.", "danger")
+        if not ids or not empleado_id.isdigit():
+            flash("Selecciona un empleado y al menos un equipo.", "danger")
+            return redirect(url_for("asignar_equipo"))
+        if len(ids) > MAX_EQUIPOS_ENTREGA:
+            flash(f"Una entrega admite hasta {MAX_EQUIPOS_ENTREGA} equipos. Divide la asignación en dos.", "danger")
             return redirect(url_for("asignar_equipo"))
         try:
             f = datetime.strptime(request.form.get("fecha", ""), "%Y-%m-%d").date()
@@ -891,26 +925,36 @@ def asignar_equipo():
         if f > hoy():
             flash("La fecha de asignación no puede ser futura.", "danger")
             return redirect(url_for("asignar_equipo"))
-        # Bloqueo de fila: evita asignar dos veces el mismo equipo si dos personas lo intentan a la vez.
-        equipo = q1("""SELECT e.id, es.nombre AS estado_nombre FROM equipo e JOIN estado_equipo es ON es.id = e.estado_id
-                       WHERE e.id = %s FOR UPDATE OF e""", (int(equipo_id),))
+        # Bloqueo de filas (en orden, para no cruzarse con otra persona): evita asignar dos veces el mismo equipo.
+        equipos = q("""SELECT e.id, es.nombre AS estado_nombre FROM equipo e JOIN estado_equipo es ON es.id = e.estado_id
+                       WHERE e.id = ANY(%s) ORDER BY e.id FOR UPDATE OF e""", (ids,))
         emp = q1("SELECT * FROM empleado WHERE id = %s", (int(empleado_id),))
-        if not equipo or equipo["estado_nombre"] != "Disponible":
-            flash("Error: solo se pueden asignar equipos en estado Disponible (RN-01).", "danger")
+        if len(equipos) != len(ids) or any(e["estado_nombre"] != "Disponible" for e in equipos):
+            flash("Error: solo se pueden asignar equipos en estado Disponible (RN-01). No se registró ninguna asignación.", "danger")
         elif not emp or emp["estado"] != "activo":
             flash("Error: solo se puede asignar a empleados activos (RN-05).", "danger")
         else:
+            # Una sola entrega: cada equipo conserva su propia asignación (devolución individual) y todos comparten una acta
             momento = datetime.combine(f, ahora().time())
-            asg = ex("""INSERT INTO asignacion (equipo_id, empleado_id, fecha_asignacion, estado, observaciones, created_by)
-                        VALUES (%s,%s,%s,'activa',%s,%s) RETURNING id""",
-                     (equipo["id"], emp["id"], momento, request.form.get("observaciones", "").strip(),
-                      session.get("username")), returning=True)
-            ex("UPDATE equipo SET estado_id=%s, updated_at=%s WHERE id=%s", (estado_id("Asignado"), ahora(), equipo["id"]))
-            ex("INSERT INTO acta (asignacion_id, fecha_generacion, estado) VALUES (%s,%s,'pendiente')", (asg["id"], ahora()))
-            log_hist(equipo["id"], "Asignación", f"Asignado a {emp['nombres']} {emp['apellidos'] or ''}".strip(),
-                     "Disponible", "Asignado", asg["id"])
+            obs = request.form.get("observaciones", "").strip()
+            asignaciones = []
+            for e in equipos:
+                asg = ex("""INSERT INTO asignacion (equipo_id, empleado_id, fecha_asignacion, estado, observaciones, created_by)
+                            VALUES (%s,%s,%s,'activa',%s,%s) RETURNING id""",
+                         (e["id"], emp["id"], momento, obs, session.get("username")), returning=True)
+                ex("UPDATE equipo SET estado_id=%s, updated_at=%s WHERE id=%s", (estado_id("Asignado"), ahora(), e["id"]))
+                asignaciones.append((e["id"], asg["id"]))
+            acta = ex("INSERT INTO acta (asignacion_id, fecha_generacion, estado) VALUES (%s,%s,'pendiente') RETURNING id",
+                      (asignaciones[0][1], ahora()), returning=True)
+            ex("UPDATE asignacion SET acta_id = %s WHERE id = ANY(%s)", (acta["id"], [a for _, a in asignaciones]))
+            for eq_id, asg_id in asignaciones:
+                log_hist(eq_id, "Asignación", f"Asignado a {emp['nombres']} {emp['apellidos'] or ''}".strip() +
+                         (f" (acta N.º {acta['id']:04d}, entrega de {len(asignaciones)} equipos)" if len(asignaciones) > 1 else ""),
+                         "Disponible", "Asignado", asg_id)
             conn().commit()
-            return redirect(url_for("entrega_exitosa", asignacion_id=asg["id"]))
+            if len(asignaciones) > 1:
+                flash(f"Se asignaron {len(asignaciones)} equipos en una sola entrega, con un acta que los incluye a todos.", "success")
+            return redirect(url_for("entrega_exitosa", asignacion_id=asignaciones[0][1]))
         conn().rollback()
         return redirect(url_for("asignar_equipo"))
 
@@ -952,14 +996,14 @@ def devolver_equipo(asig_id):
 
 @app.route("/entrega/<int:asignacion_id>")
 def entrega_exitosa(asignacion_id):
-    a = q1(f"""SELECT a.id, a.fecha_asignacion, {CODIGO.format(a='e')} AS codigo, t.nombre AS tipo, e.marca, e.modelo,
-                      emp.nombres || ' ' || COALESCE(emp.apellidos,'') AS empleado,
-                      (SELECT id FROM acta WHERE asignacion_id = a.id ORDER BY id LIMIT 1) AS acta_id
-               FROM asignacion a JOIN equipo e ON e.id = a.equipo_id JOIN empleado emp ON emp.id = a.empleado_id
-               LEFT JOIN tipo_equipo t ON t.id = e.tipo_id WHERE a.id = %s""", (asignacion_id,))
+    a = q1(f"""SELECT a.id, a.fecha_asignacion, a.acta_id, emp.nombres || ' ' || COALESCE(emp.apellidos,'') AS empleado
+               FROM asignacion a JOIN empleado emp ON emp.id = a.empleado_id WHERE a.id = %s""", (asignacion_id,))
     if not a:
         abort(404)
-    return render_template("entrega_exitosa.html", a=a)
+    equipos = _equipos_acta(a["acta_id"]) if a["acta_id"] else q(
+        f"""SELECT {CODIGO.format(a='e')} AS codigo, t.nombre AS tipo, e.marca, e.modelo FROM asignacion x
+            JOIN equipo e ON e.id = x.equipo_id LEFT JOIN tipo_equipo t ON t.id = e.tipo_id WHERE x.id = %s""", (asignacion_id,))
+    return render_template("entrega_exitosa.html", a=a, equipos=equipos)
 
 
 @app.route("/actas")
@@ -976,6 +1020,8 @@ def listar_actas():
     total = q1(f"SELECT COUNT(*) AS c FROM acta ac JOIN asignacion a ON a.id = ac.asignacion_id {where}", params)["c"]
     pg = pagina(total, pagina_int())
     actas = q(f"""SELECT ac.*, a.empleado_id AS emp_id, {CODIGO.format(a='e')} AS codigo, e.numero_serie,
+                         COALESCE((SELECT string_agg('EQ-' || LPAD(x.equipo_id::text, 3, '0'), ', ' ORDER BY x.id) FROM asignacion x WHERE x.acta_id = ac.id), {CODIGO.format(a='e')}) AS codigos,
+                         (SELECT COUNT(*) FROM asignacion x WHERE x.acta_id = ac.id) AS n_equipos,
                          emp.nombres || ' ' || COALESCE(emp.apellidos,'') AS empleado_nombre
                   FROM acta ac JOIN asignacion a ON a.id = ac.asignacion_id JOIN equipo e ON e.id = a.equipo_id
                   JOIN empleado emp ON emp.id = a.empleado_id {where}
@@ -983,9 +1029,19 @@ def listar_actas():
     return render_template("actas.html", actas=actas, pg=pg, estado=estado)
 
 
+def _equipos_acta(acta_id):
+    """Equipos (asignaciones) que cubre un acta: una entrega puede incluir varios."""
+    return q(f"""SELECT a.id AS asignacion_id, a.equipo_id, a.estado AS asig_estado, a.fecha_asignacion,
+                        a.observaciones AS obs_asignacion, {CODIGO.format(a='e')} AS codigo, e.numero_serie, e.marca,
+                        e.modelo, e.placa, t.nombre AS tipo
+                 FROM asignacion a JOIN equipo e ON e.id = a.equipo_id LEFT JOIN tipo_equipo t ON t.id = e.tipo_id
+                 WHERE a.acta_id = %s ORDER BY a.id""", (acta_id,))
+
+
 def _acta_firma(acta_id):
     return q1(f"""SELECT ac.*, a.estado AS asig_estado, a.empleado_id, a.equipo_id, a.fecha_asignacion,
                          {CODIGO.format(a='e')} AS codigo, e.marca, e.modelo, t.nombre AS tipo,
+                         (SELECT COUNT(*) FROM asignacion x WHERE x.acta_id = ac.id AND x.estado = 'activa') AS activas,
                          emp.nombres || ' ' || COALESCE(emp.apellidos,'') AS empleado_nombre
                   FROM acta ac JOIN asignacion a ON a.id = ac.asignacion_id JOIN equipo e ON e.id = a.equipo_id
                   JOIN empleado emp ON emp.id = a.empleado_id LEFT JOIN tipo_equipo t ON t.id = e.tipo_id
@@ -1031,7 +1087,7 @@ def firmar_acta(acta_id):
         acta = _acta_firma(acta_id)
         if acta["estado"] == "firmada":
             flash("El acta ya está firmada.", "warning")
-        elif acta["asig_estado"] != "activa":
+        elif not acta["activas"]:
             flash("No se puede firmar: la asignación ya fue cerrada (RN-04).", "danger")
         else:
             nombre, err = _guardar_evidencia(request.files.get("evidencia"), acta_id)
@@ -1041,13 +1097,14 @@ def firmar_acta(acta_id):
             firmante = request.form.get("firmado_por", "").strip() or acta["empleado_nombre"]
             ex("""UPDATE acta SET estado='firmada', fecha_firma=%s, firmado_por=%s, evidencia_path=%s, observaciones=%s
                   WHERE id=%s""", (ahora(), firmante[:150], nombre, request.form.get("observaciones", "").strip(), acta_id))
-            log_hist(acta["equipo_id"], "Firma de acta",
-                     f"Acta #{acta_id} firmada por {firmante[:150]}" + (" con evidencia adjunta" if nombre else ""),
-                     asignacion_id=acta["asignacion_id"])
+            for it in _equipos_acta(acta_id):  # la firma queda en el historial de cada equipo de la entrega
+                log_hist(it["equipo_id"], "Firma de acta",
+                         f"Acta #{acta_id} firmada por {firmante[:150]}" + (" con evidencia adjunta" if nombre else ""),
+                         asignacion_id=it["asignacion_id"])
             conn().commit()
             flash("Acta firmada correctamente." + (" La evidencia quedó registrada." if nombre else ""), "success")
         return redirect(url_for("listar_actas") if permitido("gestionar") else url_for("mis_equipos"))
-    return render_template("firmar_acta.html", acta=acta)
+    return render_template("firmar_acta.html", acta=acta, equipos=_equipos_acta(acta_id))
 
 
 @app.route("/actas/<int:acta_id>/evidencia")
@@ -1074,7 +1131,7 @@ def imprimir_acta(acta_id):
     u = usuario_actual()
     if u["rol"] == "Empleado" and a["empleado_id"] != u["empleado_id"]:
         abort(404)
-    return render_template("acta_imprimir.html", a=a)
+    return render_template("acta_imprimir.html", a=a, equipos=_equipos_acta(acta_id))
 
 
 # --------------------------------------------------------------------------- mantenimiento
@@ -1272,12 +1329,13 @@ def datos_reporte(desde, hasta, equipo_id=None, empleado_id=None):
     umbral = umbral_sin_movimiento()
     con_mant = q1("SELECT COUNT(DISTINCT equipo_id) AS c FROM mantenimiento WHERE fecha BETWEEN %s AND %s", (desde, hasta))["c"]
     tasa = round(con_mant * 100 / r["total"], 1) if r["total"] else 0
-    pendientes = q(f"""SELECT ac.id, ac.fecha_generacion, {CODIGO.format(a='e')} AS codigo,
+    pendientes = q(f"""SELECT ac.id, ac.fecha_generacion, COALESCE((SELECT string_agg('EQ-' || LPAD(x.equipo_id::text, 3, '0'), ', ' ORDER BY x.id) FROM asignacion x WHERE x.acta_id = ac.id), {CODIGO.format(a='e')}) AS codigo,
                               emp.nombres || ' ' || COALESCE(emp.apellidos,'') AS empleado,
                               (%s::date - ac.fecha_generacion::date) AS dias
                        FROM acta ac JOIN asignacion a ON a.id = ac.asignacion_id JOIN equipo e ON e.id = a.equipo_id
                        JOIN empleado emp ON emp.id = a.empleado_id WHERE ac.estado = 'pendiente'
-                       AND (%s::int IS NULL OR a.equipo_id = %s) AND (%s::int IS NULL OR a.empleado_id = %s)
+                       AND (%s::int IS NULL OR EXISTS (SELECT 1 FROM asignacion x WHERE x.acta_id = ac.id AND x.equipo_id = %s))
+                       AND (%s::int IS NULL OR a.empleado_id = %s)
                        ORDER BY ac.fecha_generacion""", (hoy(), equipo_id, equipo_id, empleado_id, empleado_id))
     cerradas = q1("SELECT COUNT(*) AS c FROM asignacion WHERE estado='cerrada' AND fecha_devolucion >= %s AND fecha_devolucion < %s",
                   (d1, d2))["c"]
@@ -1355,7 +1413,10 @@ def reporte_pdf():
 
 # --------------------------------------------------------------------------- usuarios
 def _form_usuario():
-    return {k: request.form.get(k, "").strip() for k in ("username", "nombre_completo", "rol", "password", "empleado_id", "documento")}
+    d = {k: request.form.get(k, "").strip() for k in ("username", "nombre_completo", "rol", "password", "empleado_id", "documento", "correo")}
+    d["nombre_completo"] = textos.nombre_propio(d["nombre_completo"])  # «KENNY vivero» -> «Kenny Vivero»
+    d["correo"] = textos.correo(d["correo"])
+    return d
 
 
 def _empleado_valido(d, uid=None):
@@ -1399,13 +1460,15 @@ def nuevo_usuario():
             flash("El rol Empleado necesita una ficha de empleado: elige uno existente o escribe el documento para crearla.", "danger")
         elif d["rol"] == "Empleado" and not d["empleado_id"] and q1("SELECT id FROM empleado WHERE documento = %s", (d["documento"],)):
             flash("Ya existe un empleado con ese documento: elígelo en la lista «Empleado vinculado».", "danger")
+        elif d["rol"] == "Empleado" and not d["empleado_id"] and not textos.correo_valido(d["correo"]):
+            flash("Para crear la ficha del empleado escribe su correo (es un dato de contacto; no se usa para iniciar sesión).", "danger")
         else:
             emp_id = _empleado_valido(d)[0]
             if d["rol"] == "Empleado" and not emp_id:  # se crea la ficha para que vea sus equipos desde el primer ingreso
-                partes = (d["nombre_completo"] or d["username"]).split(" ", 1)
-                emp_id = ex("""INSERT INTO empleado (documento, nombres, apellidos, estado, fecha_ingreso)
-                               VALUES (%s,%s,%s,'activo',%s) RETURNING id""",
-                            (d["documento"], partes[0], partes[1] if len(partes) > 1 else "", hoy()), returning=True)["id"]
+                partes = (d["nombre_completo"] or textos.nombre_propio(d["username"])).split(" ", 1)
+                emp_id = ex("""INSERT INTO empleado (documento, nombres, apellidos, correo, estado, fecha_ingreso)
+                               VALUES (%s,%s,%s,%s,'activo',%s) RETURNING id""",
+                            (d["documento"], partes[0], partes[1] if len(partes) > 1 else "", d["correo"], hoy()), returning=True)["id"]
             ex("INSERT INTO usuario (username, password_hash, nombre_completo, rol, empleado_id, activo) VALUES (%s,%s,%s,%s,%s,TRUE)",
                (d["username"], generate_password_hash(d["password"]), d["nombre_completo"] or d["username"], d["rol"], emp_id))
             conn().commit()
@@ -1512,9 +1575,12 @@ def configuracion():
     estados = q("""SELECT s.*, (SELECT COUNT(*) FROM equipo e WHERE e.estado_id = s.id) AS usos FROM estado_equipo s ORDER BY id""")
     marcas = q("""SELECT m.*, (SELECT COUNT(*) FROM equipo e WHERE lower(e.marca) = lower(m.nombre)) AS usos FROM marca m ORDER BY lower(nombre)""")
     areas = q("""SELECT a.*, (SELECT COUNT(*) FROM empleado e WHERE lower(e.area) = lower(a.nombre)) AS usos FROM area a ORDER BY lower(nombre)""")
+    ubicaciones = q("""SELECT u.*, (SELECT COUNT(*) FROM equipo e WHERE lower(e.ubicacion) = lower(u.nombre)) AS usos FROM ubicacion u ORDER BY lower(nombre)""")
+    cargos = q("""SELECT c.*, (SELECT COUNT(*) FROM empleado e WHERE lower(e.cargo) = lower(c.nombre)) AS usos FROM cargo c ORDER BY lower(nombre)""")
     auto = sorted(os.listdir(RESPALDOS), reverse=True)[:5] if os.path.isdir(RESPALDOS) else []
     return render_template("configuracion.html", tab=tab, zonas=ZONAS, cfg=config(True), asistente_motor=asistente.estado_motor(), ia_configurada=asistente.ia.configurado(),
-                           tipos=tipos, estados=estados, base=ESTADOS_BASE, auto=auto, marcas=marcas, areas=areas)
+                           tipos=tipos, estados=estados, base=ESTADOS_BASE, auto=auto, marcas=marcas, areas=areas,
+                           ubicaciones=ubicaciones, cargos=cargos)
 
 
 @app.route("/configuracion/general", methods=["POST"])
@@ -1625,7 +1691,7 @@ def guardar_catalogo(cat):
         abort(404)
     uso_tabla, uso_col, etiqueta = CATALOGOS[cat]
     accion, cid = request.form.get("accion", ""), request.form.get("id", "")
-    nombre = request.form.get("nombre", "").strip()[:100]
+    nombre = textos.etiqueta(request.form.get("nombre", "").strip()[:100])  # primera letra en mayúscula; siglas de 3 letras se respetan
     if accion == "crear":
         if not nombre:
             flash("Escribe el nombre de la opción.", "danger")
@@ -1672,7 +1738,7 @@ def guardar_operacion():
 
 
 # --------------------------------------------------------------------------- respaldo
-RESPALDO_TABLAS = ["tipo_equipo", "estado_equipo", "marca", "area", "empleado", "equipo", "asignacion", "acta", "historial",
+RESPALDO_TABLAS = ["tipo_equipo", "estado_equipo", "marca", "area", "ubicacion", "cargo", "empleado", "equipo", "asignacion", "acta", "historial",
                    "mantenimiento", "configuracion"]
 
 
