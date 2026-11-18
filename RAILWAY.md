@@ -21,6 +21,7 @@ variables de Railway.
 | `DATA_DIR` | `/data` | Carpeta persistente (volumen) para fotos, evidencias de actas y respaldos |
 | `PORT` | la pone Railway | No la definas |
 | `ANTHROPIC_API_KEY` | clave de la API de Anthropic | Activa el asistente con Claude (opcional). Sin ella, usa su motor interno basado en el manual |
+| `ADMIN_RESET_PASSWORD` | solo si olvidaste la clave del Admin | Clave temporal (mínimo 8 caracteres) que se aplica al Admin una sola vez al arrancar; pedirá cambiarla al ingresar. Quítala después |
 | `ANTHROPIC_MODEL` | opcional (`claude-sonnet-5-5` por defecto) | Modelo de Claude que responde |
 | `OLLAMA_URL`, `OLLAMA_MODEL` | opcionales | El modelo local no existe en Railway; sin Claude el asistente usa su motor interno |
 | `COOKIE_SECURE`, `TRUST_PROXY` | automáticas | Se activan solas en Railway (cookies seguras y detrás del proxy HTTPS) |

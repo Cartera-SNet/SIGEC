@@ -20,6 +20,7 @@ Referencia: `docs/Ficha_Documentacion_SIGEC.docx`. Cuando cambie el sistema o la
 | RF-18 | `/usuarios` (rol + vínculo a empleado; el rol Empleado crea su ficha al darse de alta) | Cumple |
 | RF-22 | Foto de perfil por usuario (`/cuenta/foto`, menú del usuario) | Cumple |
 | RF-19, RNF-06 | Configuración, respaldo manual y automático diario (`respaldos/`) | Cumple |
+| RF-18, RN-19, CA-19 | Restablecer clave con contraseña temporal y cambio obligatorio (`restablecer_clave`, `clave_obligatoria`); recuperación del Admin con `ADMIN_RESET_PASSWORD` | Cumple |
 | RF-20, RNF-11, CA-15 | Asistente de IA (`asistente.py`: motor interno/Ollama locales + Claude opcional en `ia.py`, solo lectura por rol, interruptor del Admin) + manual PDF | Cumple |
 | RF-21, CA-13 | `/mis-equipos`, «Mis actas» | Cumple |
 | RN-05, CA-10 | Solo empleados activos en `/asignar` | Cumple |

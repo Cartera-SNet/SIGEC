@@ -214,7 +214,7 @@ Solo el Administrador ve la sección Usuarios. Pulsa «Nuevo Usuario», escribe 
 
 ### 12.2 Editar, desactivar o eliminar
 
-Con el lápiz cambias nombre, rol y contraseña, y puedes desactivar al usuario (deja de poder ingresar, incluso si estaba conectado). Con la papelera lo eliminas definitivamente. No puedes eliminar ni desactivar tu propio usuario, ni al usuario Admin.
+Con el lápiz cambias nombre, rol y contraseña, generas una contraseña temporal si la persona olvidó la suya (sección 16.3), y puedes desactivar al usuario (deja de poder ingresar, incluso si estaba conectado). Con la papelera lo eliminas definitivamente. No puedes eliminar ni desactivar tu propio usuario, ni al usuario Admin.
 
 ### 12.3 Roles y permisos
 
@@ -312,11 +312,13 @@ Revisa tu conexión a internet y que la línea `DATABASE_URL` del archivo `.env`
 
 ### 16.3 Olvidé mi contraseña
 
-Pídele al Administrador que la restablezca en Usuarios → lápiz → nueva contraseña. Si olvidaste la del Admin, borra su fila de la tabla `usuario` en Neon y reinicia SIGEC: se vuelve a crear con la contraseña inicial.
+Pídele al Administrador que te genere una contraseña temporal: en Usuarios → lápiz → «Generar contraseña temporal». SIGEC crea una clave aleatoria segura y la muestra una sola vez en pantalla (con botón Copiar); el Administrador te la entrega por un medio seguro. Al ingresar con ella, SIGEC te pide crear tu propia contraseña (mínimo 8 caracteres y distinta de la temporal) antes de usar cualquier función. La clave anterior deja de funcionar y, si estabas bloqueado por intentos fallidos, quedas desbloqueado. El Administrador no conoce la contraseña que tú elijas. Si el Administrador genera una clave por error, puede generar otra.
+
+Si olvidaste la contraseña del Admin y no hay otro Administrador que pueda generarla, en Railway define la variable `ADMIN_RESET_PASSWORD` con una clave temporal de al menos 8 caracteres y reinicia el servicio (en tu equipo, ponla en `.env`). Al arrancar, el Admin queda con esa clave temporal y SIGEC le pedirá cambiarla al ingresar. Se aplica una sola vez por cada valor, así que puedes quitar la variable después sin que se repita en cada reinicio. Por eso conviene tener siempre un segundo usuario Administrador.
 
 ### 16.4 «Demasiados intentos fallidos»
 
-Espera 5 minutos o reinicia el programa e intenta con la contraseña correcta.
+Espera 5 minutos, reinicia el programa o pide al Administrador que genere una contraseña temporal (sección 16.3), lo que también te desbloquea.
 
 ### 16.5 El asistente no usa Claude o responde con el motor interno
 
@@ -340,4 +342,4 @@ Es normal: significa que no hay Ollama activo y responde con el motor incluido. 
 
 ## 17. Historial de versiones del manual
 
-Versión 1.0 (18/11/2026): primera versión completa del sistema y de este manual, alineada con la Ficha de Documentación (v1.0). Incluye diseño visual compacto, roles y permisos (con el rol Mantenimiento y responsable de cada mantenimiento), usuarios con foto, equipos, empleados, catálogos de tipos, estados, marcas y áreas con listas desplegables, asignaciones, cambio de estado con motivo, firma de actas con evidencia, reportes con filtros por usuario y equipo y movimientos, respaldo automático, asistente de IA (motor interno y Ollama locales, y motor opcional con Claude con herramientas de solo lectura), modo responsive para celulares y publicación en Railway. Se agregó además el aviso de contraseña inicial del Admin y cabeceras de seguridad, y se corrigió la eliminación de usuarios con mantenimientos asignados.
+Versión 1.0 (18/11/2026): primera versión completa del sistema y de este manual, alineada con la Ficha de Documentación (v1.0). Incluye diseño visual compacto, roles y permisos (con el rol Mantenimiento y responsable de cada mantenimiento), usuarios con foto, equipos, empleados, catálogos de tipos, estados, marcas y áreas con listas desplegables, asignaciones, cambio de estado con motivo, firma de actas con evidencia, reportes con filtros por usuario y equipo y movimientos, respaldo automático, asistente de IA (motor interno y Ollama locales, y motor opcional con Claude con herramientas de solo lectura), modo responsive para celulares y publicación en Railway. Se agregó además el aviso de contraseña inicial del Admin, cabeceras de seguridad, el restablecimiento de contraseñas con clave temporal y cambio obligatorio, y se corrigió la eliminación de usuarios con mantenimientos asignados.

@@ -2,6 +2,7 @@
 SIGEC - Sistema de Inventario y Gestión de Equipos de Cómputo
 Aplicación Flask + PostgreSQL (Neon).  Ver docs/manual.md para el manual de uso.
 """
+import hashlib
 import io
 import json
 import os
@@ -14,7 +15,7 @@ from functools import wraps
 from zoneinfo import ZoneInfo
 
 import psycopg2
-from flask import (Flask, abort, flash, g, jsonify, redirect, render_template,
+from flask import (Flask, abort, flash, g, jsonify, make_response, redirect, render_template,
                    request, send_file, session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -62,10 +63,10 @@ ZONAS = {
 }
 CODIGO = "'EQ-' || LPAD({a}.id::text, 3, '0')"
 POR_PAGINA = 10
-EMPLEADO_OK = {"login", "logout", "cambiar_password", "mis_equipos", "listar_actas", "firmar_acta", "evidencia_acta",
+EMPLEADO_OK = {"login", "logout", "cambiar_password", "clave_obligatoria", "mis_equipos", "listar_actas", "firmar_acta", "evidencia_acta",
                "imprimir_acta", "detalle_empleado", "manual", "subir_foto", "quitar_foto", "ver_foto", "api_asistente", "api_asistente_estado", "static"}
 # El rol Mantenimiento solo accede al módulo de mantenimientos (y a su perfil, manual y asistente).
-MANT_OK = {"login", "logout", "cambiar_password", "mantenimiento", "completar_mantenimiento", "manual", "subir_foto",
+MANT_OK = {"login", "logout", "cambiar_password", "clave_obligatoria", "mantenimiento", "completar_mantenimiento", "manual", "subir_foto",
            "quitar_foto", "ver_foto", "api_asistente", "api_asistente_estado", "static"}
 # Catálogos de listas desplegables: nombre -> (tabla donde se usa, columna, etiqueta)
 CATALOGOS = {"marca": ("equipo", "marca", "marca"), "area": ("empleado", "area", "área")}
@@ -175,6 +176,11 @@ def proteger():
             return jsonify(error="no autenticado"), 401
         return redirect(url_for("login", next=request.full_path if request.method == "GET" else None))
     u = usuario_actual()
+    if u and u["debe_cambiar_clave"] and request.endpoint not in ("clave_obligatoria", "logout", "login"):
+        # Contraseña temporal: nada funciona hasta que la persona elija la suya
+        if request.path.startswith("/api/"):
+            return jsonify(error="debes cambiar tu contraseña"), 403
+        return redirect(url_for("clave_obligatoria"))
     if u and u["rol"] == "Empleado" and request.endpoint not in EMPLEADO_OK:
         # Ficha sec. 6: el Empleado solo accede a sus propios equipos y actas.
         flash("No tienes permiso para acceder a esa sección.", "danger")
@@ -188,7 +194,7 @@ def usuario_actual():
     if "uid" not in session:
         return None
     if "u" not in g:
-        g.u = q1("SELECT id, username, nombre_completo, rol, activo, empleado_id, foto FROM usuario WHERE id = %s", (session["uid"],))
+        g.u = q1("SELECT id, username, nombre_completo, rol, activo, empleado_id, foto, debe_cambiar_clave FROM usuario WHERE id = %s", (session["uid"],))
         if not g.u or not g.u["activo"]:
             session.clear()
             g.u = None
@@ -455,6 +461,40 @@ def cambiar_password():
         session.pop("clave_inicial", None)
         flash("Contraseña actualizada correctamente.", "success")
     return redirect(destino)
+
+
+@app.route("/cuenta/cambiar-clave", methods=["GET", "POST"])
+def clave_obligatoria():
+    """Pantalla obligatoria tras ingresar con una contraseña temporal (generada por el Administrador)."""
+    u = q1("SELECT * FROM usuario WHERE id = %s", (session["uid"],))
+    if not u["debe_cambiar_clave"]:
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        nueva, conf = request.form.get("nueva", ""), request.form.get("confirmar", "")
+        if len(nueva) < 8:
+            flash("La nueva contraseña debe tener al menos 8 caracteres.", "danger")
+        elif nueva != conf:
+            flash("La confirmación no coincide con la nueva contraseña.", "danger")
+        elif check_password_hash(u["password_hash"], nueva):
+            flash("Elige una contraseña distinta de la temporal.", "danger")
+        else:
+            ex("UPDATE usuario SET password_hash = %s, debe_cambiar_clave = FALSE WHERE id = %s", (generate_password_hash(nueva), u["id"]))
+            conn().commit()
+            session.pop("clave_inicial", None)
+            flash("Contraseña actualizada. Ya puedes usar el sistema.", "success")
+            return redirect(url_for("index"))
+    return render_template("cambiar_clave.html", nombre=u["nombre_completo"] or u["username"])
+
+
+_ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"  # sin caracteres que se confunden (0/O, 1/l/I)
+
+
+def clave_temporal(largo=12):
+    """Contraseña aleatoria segura, con mayúscula, minúscula y número."""
+    while True:
+        c = "".join(secrets.choice(_ALFABETO) for _ in range(largo))
+        if any(x.isupper() for x in c) and any(x.islower() for x in c) and any(x.isdigit() for x in c):
+            return c
 
 
 # --------------------------------------------------------------------------- dashboard
@@ -1422,6 +1462,26 @@ def editar_usuario(uid):
                            principal=principal, empleados=_empleados_lista())
 
 
+@app.route("/usuarios/<int:uid>/restablecer", methods=["POST"])
+@requiere("admin")
+def restablecer_clave(uid):
+    """Genera una contraseña temporal segura; la persona debe cambiarla al ingresar."""
+    u = q1("SELECT * FROM usuario WHERE id = %s", (uid,))
+    if not u:
+        abort(404)
+    if u["id"] == session["uid"]:
+        flash("Para cambiar tu propia contraseña usa Configuración → Seguridad.", "warning")
+        return redirect(url_for("editar_usuario", uid=uid))
+    temporal = clave_temporal()
+    ex("UPDATE usuario SET password_hash = %s, debe_cambiar_clave = TRUE WHERE id = %s", (generate_password_hash(temporal), uid))
+    conn().commit()
+    for k in [k for k in _intentos if k.startswith(u["username"].lower() + "|")]:
+        _intentos.pop(k, None)  # también lo desbloquea si había superado los intentos
+    resp = make_response(render_template("clave_temporal.html", u=u, temporal=temporal))
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
 @app.route("/usuarios/<int:uid>/eliminar", methods=["POST"])
 @requiere("admin")
 def eliminar_usuario(uid):
@@ -1736,6 +1796,33 @@ def error_interno(_e):
                            mensaje="Algo salió mal procesando la solicitud. Intenta de nuevo."), 500
 
 
+def reset_admin_por_variable():
+    """Recuperación del Admin sin tocar la base de datos: si defines ADMIN_RESET_PASSWORD (mínimo 8 caracteres),
+    al arrancar el Admin queda con esa contraseña TEMPORAL y deberá cambiarla al ingresar. Se aplica una sola vez
+    por valor (si la dejas puesta, no se vuelve a aplicar en cada reinicio)."""
+    nueva = os.environ.get("ADMIN_RESET_PASSWORD", "")
+    if not nueva:
+        return
+    if len(nueva) < 8:
+        print("[SIGEC] ADMIN_RESET_PASSWORD ignorada: debe tener al menos 8 caracteres.")
+        return
+    marca = hashlib.sha256(nueva.encode()).hexdigest()
+    cn = db.connect()
+    try:
+        cur = cn.cursor()
+        cur.execute("SELECT valor FROM configuracion WHERE clave = 'admin_reset_aplicado'")
+        fila = cur.fetchone()
+        if fila and (fila["valor"] if isinstance(fila, dict) else fila[0]) == marca:
+            return
+        cur.execute("UPDATE usuario SET password_hash = %s, debe_cambiar_clave = TRUE, activo = TRUE WHERE lower(username) = lower(%s)",
+                    (generate_password_hash(nueva), db.ADMIN_USER))
+        cur.execute("INSERT INTO configuracion (clave, valor) VALUES ('admin_reset_aplicado', %s) ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor", (marca,))
+        cn.commit()
+    finally:
+        cn.close()
+    print("[SIGEC] Contraseña del Admin restablecida con ADMIN_RESET_PASSWORD. Pedirá cambiarla al ingresar; ya puedes quitar la variable.")
+
+
 def arrancar(reintentos=5):
     """Prepara la base de datos (idempotente) y el respaldo diario. En la nube reintenta si Neon tarda en despertar."""
     for i in range(reintentos):
@@ -1747,6 +1834,7 @@ def arrancar(reintentos=5):
             if i == reintentos - 1:
                 raise
             time.sleep(4)
+    reset_admin_por_variable()
     iniciar_respaldo_diario()
     if not os.environ.get("SECRET_KEY"):
         print("[SIGEC] AVISO: falta SECRET_KEY; las sesiones se cerrarán en cada reinicio. Defínela en .env o en las variables.")

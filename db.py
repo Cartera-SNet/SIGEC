@@ -195,6 +195,7 @@ def init_db():
     cur = conn.cursor()
     cur.execute(SCHEMA)
     cur.execute("ALTER TABLE usuario ADD COLUMN IF NOT EXISTS foto VARCHAR(255)")  # foto de perfil (opcional)
+    cur.execute("ALTER TABLE usuario ADD COLUMN IF NOT EXISTS debe_cambiar_clave BOOLEAN NOT NULL DEFAULT FALSE")  # clave temporal: obliga a cambiarla al ingresar
 
     # El script original limitaba los roles; se amplía el CHECK para admitir los roles actuales.
     cur.execute("ALTER TABLE usuario DROP CONSTRAINT IF EXISTS usuario_rol_check")

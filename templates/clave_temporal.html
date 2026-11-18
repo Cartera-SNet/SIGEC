@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Contraseña temporal{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:640px">
+    <h2 class="page-title">Contraseña temporal generada</h2>
+    <p style="color:var(--muted)">Usuario: <b>{{ u.username }}</b>{% if u.nombre_completo %} · {{ u.nombre_completo }}{% endif %}</p>
+    <div class="sub-card" style="text-align:center;margin:18px 0">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Contraseña temporal (se muestra solo ahora)</div>
+        <code id="clave-temp" style="font-size:26px;letter-spacing:2px;font-weight:700;user-select:all">{{ temporal }}</code>
+        <div style="margin-top:12px"><button type="button" class="btn btn-ghost" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('clave-temp').textContent); this.textContent='Copiada'"><i class="bi bi-clipboard"></i> Copiar</button></div>
+    </div>
+    <div class="hint" style="margin-bottom:16px">Entrégasela a la persona por un medio seguro. Al ingresar con ella, SIGEC le pedirá crear su propia contraseña antes de continuar. Si la pierdes, genera otra. Esta pantalla no se puede volver a abrir.</div>
+    <a class="btn btn-primary" href="{{ url_for('usuarios') }}">Listo, volver a Usuarios</a>
+</div>
+{% endblock %}

@@ -25,5 +25,12 @@
         <div class="hint" style="margin-bottom:16px"><b>Roles:</b> Administrador (todo) · Operador (gestiona inventario, asignaciones y mantenimientos) · Auditor y Jefe (consulta y reportes) · Mantenimiento (solo el módulo de mantenimientos: ve y completa los que se le asignan) · Empleado (consulta y firma de sus propias actas).</div>
         <div style="display:flex;gap:12px"><button class="btn btn-primary"><i class="bi bi-check-lg"></i> {{ 'Guardar cambios' if editar else 'Crear usuario' }}</button><a class="btn btn-ghost" href="{{ url_for('usuarios') }}">Cancelar</a></div>
     </form>
+    {% if editar and u.id != usuario.id %}
+    <form method="post" action="{{ url_for('restablecer_clave', uid=u.id) }}" class="sub-card" style="margin-top:24px" onsubmit="return confirm('Se generará una contraseña temporal y la actual dejará de funcionar. ¿Continuar?')">{{ csrf() }}
+        <h3 class="sub-title" style="font-size:18px">¿Olvidó su contraseña?</h3>
+        <div class="hint" style="margin-bottom:12px">Genera una contraseña temporal segura. La persona deberá cambiarla en cuanto ingrese. También lo desbloquea si había superado los intentos fallidos.</div>
+        <button class="btn btn-ghost"><i class="bi bi-key-fill"></i> Generar contraseña temporal</button>
+    </form>
+    {% endif %}
 </div>
 {% endblock %}
