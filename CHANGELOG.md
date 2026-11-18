@@ -9,6 +9,7 @@ Primera versión completa del sistema, alineada con la Ficha de Documentación e
 - Catálogos de **marca** y **área** con listas desplegables en los formularios de equipos y empleados.
 - Reportes con filtro por **usuario** o **equipo**, tabla y hoja de **movimientos**, y responsable en mantenimientos.
 - Diseño más compacto en escritorio.
+- Textos guía en el inicio de sesión («Digite su usuario» / «Digite su contraseña»).
 - Contraseña olvidada: el Administrador genera una clave temporal aleatoria (se muestra una vez) y la persona debe cambiarla al ingresar; recuperación del Admin con la variable `ADMIN_RESET_PASSWORD`.
 - Aviso de contraseña inicial del Admin, cabeceras de seguridad y corrección al eliminar usuarios con mantenimientos asignados.
 - Listo para Railway: gunicorn, ruta de salud `/health`, volumen persistente (`DATA_DIR`) y guía `RAILWAY.md`.

@@ -17,9 +17,9 @@
         {% for cat, msg in messages %}<div class="flash flash-{{ cat }}" style="text-align:left"><i class="bi bi-info-circle-fill"></i><span>{{ msg }}</span></div>{% endfor %}
     {% endwith %}
     <div class="fg"><label for="username">Usuario</label>
-        <div class="input-ico"><i class="bi bi-person"></i><input class="inp" id="username" name="username" required autofocus autocomplete="username"></div></div>
+        <div class="input-ico"><i class="bi bi-person"></i><input class="inp" id="username" name="username" required autofocus autocomplete="username" placeholder="Digite su usuario"></div></div>
     <div class="fg"><label for="password">Contraseña</label>
-        <div class="input-ico"><i class="bi bi-lock"></i><input class="inp" id="password" name="password" type="password" required autocomplete="current-password"></div></div>
+        <div class="input-ico"><i class="bi bi-lock"></i><input class="inp" id="password" name="password" type="password" required autocomplete="current-password" placeholder="Digite su contraseña"></div></div>
     <button class="btn btn-primary" type="submit"><i class="bi bi-box-arrow-in-right"></i> Ingresar</button>
     <div class="login-foot">SIGEC v{{ version }} · Inventario Inteligente</div>
 </form>

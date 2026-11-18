@@ -47,7 +47,7 @@ En el modo móvil: el menú se abre con el botón de las tres rayas y se cierra 
 
 ### 3.1 Iniciar sesión
 
-Escribe tu usuario y contraseña en la pantalla de inicio (con el logo de SIGEC) y pulsa «Ingresar». La sesión se cierra automáticamente tras 60 minutos sin actividad.
+Escribe tu usuario y contraseña en la pantalla de inicio (con el logo de SIGEC); cada campo muestra una guía («Digite su usuario» y «Digite su contraseña»). Luego pulsa «Ingresar». La sesión se cierra automáticamente tras 60 minutos sin actividad.
 
 ![Pantalla de inicio de sesión](capturas/01_login.jpg)
 
@@ -342,4 +342,4 @@ Es normal: significa que no hay Ollama activo y responde con el motor incluido. 
 
 ## 17. Historial de versiones del manual
 
-Versión 1.0 (18/11/2026): primera versión completa del sistema y de este manual, alineada con la Ficha de Documentación (v1.0). Incluye diseño visual compacto, roles y permisos (con el rol Mantenimiento y responsable de cada mantenimiento), usuarios con foto, equipos, empleados, catálogos de tipos, estados, marcas y áreas con listas desplegables, asignaciones, cambio de estado con motivo, firma de actas con evidencia, reportes con filtros por usuario y equipo y movimientos, respaldo automático, asistente de IA (motor interno y Ollama locales, y motor opcional con Claude con herramientas de solo lectura), modo responsive para celulares y publicación en Railway. Se agregó además el aviso de contraseña inicial del Admin, cabeceras de seguridad, el restablecimiento de contraseñas con clave temporal y cambio obligatorio, y se corrigió la eliminación de usuarios con mantenimientos asignados.
+Versión 1.0 (18/11/2026): primera versión completa del sistema y de este manual, alineada con la Ficha de Documentación (v1.0). Incluye diseño visual compacto, roles y permisos (con el rol Mantenimiento y responsable de cada mantenimiento), usuarios con foto, equipos, empleados, catálogos de tipos, estados, marcas y áreas con listas desplegables, asignaciones, cambio de estado con motivo, firma de actas con evidencia, reportes con filtros por usuario y equipo y movimientos, respaldo automático, asistente de IA (motor interno y Ollama locales, y motor opcional con Claude con herramientas de solo lectura), modo responsive para celulares y publicación en Railway. Se agregaron además textos guía en el inicio de sesión, el aviso de contraseña inicial del Admin, cabeceras de seguridad, el restablecimiento de contraseñas con clave temporal y cambio obligatorio, y se corrigió la eliminación de usuarios con mantenimientos asignados.
