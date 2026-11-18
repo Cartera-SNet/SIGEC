@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import estado_pill, pager, csrf %}
+{% block title %}Inventario{% endblock %}
+{% block content %}
+<div class="panel">
+    <form class="toolbar" method="get">
+        <label class="search"><i class="bi bi-search"></i><input name="q" value="{{ texto }}" placeholder="Buscar equipo, marca, modelo..." autocomplete="off"></label>
+        <select class="filter-sel" name="estado" onchange="this.form.submit()">
+            <option value="">Todos los estados</option>
+            {% for s in estados %}<option value="{{ s.nombre }}" {{ 'selected' if s.nombre == estado }}>{{ s.nombre }}</option>{% endfor %}
+        </select>
+        {% if puede('gestionar') %}<a class="btn btn-primary" href="{{ url_for('nuevo_equipo') }}"><i class="bi bi-plus-lg"></i> Nuevo Equipo</a>{% endif %}
+        <div class="filters-row">
+            <select class="filter-sel" name="tipo" onchange="this.form.submit()" aria-label="Tipo"><option value="">Todos los tipos</option>
+                {% for t in tipos %}<option value="{{ t.id }}" {{ 'selected' if f.tipo == t.id|string }}>{{ t.nombre }}</option>{% endfor %}</select>
+            <input class="filter-sel" name="ubicacion" value="{{ f.ubicacion }}" placeholder="Ubicación" aria-label="Ubicación">
+            <label class="fdate">Ingreso desde <input class="filter-sel" type="date" name="desde" value="{{ f.desde }}"></label>
+            <label class="fdate">hasta <input class="filter-sel" type="date" name="hasta" value="{{ f.hasta }}"></label>
+            <button class="btn btn-ghost btn-sm" style="height:50px">Filtrar</button>
+            {% if texto or estado or f.tipo or f.ubicacion or f.desde or f.hasta %}<a class="btn btn-ghost btn-sm" style="height:50px" href="{{ url_for('listar_equipos') }}">Limpiar</a>{% endif %}
+        </div>
+    </form>
+    <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Código</th><th>Equipo</th><th>Marca</th><th>Modelo</th><th>Estado</th><th>Asignado a</th><th class="c">Acciones</th></tr></thead>
+        <tbody>
+        {% for e in equipos %}
+        <tr><td class="code">{{ e.codigo }}</td><td>{{ e.tipo or '-' }}</td><td>{{ e.marca or '-' }}</td><td>{{ e.modelo or '-' }}</td>
+            <td>{{ estado_pill(e.estado) }}</td><td>{{ e.asignado if e.asignado else '' }}</td>
+            <td><div class="acts">
+                <a class="act" href="{{ url_for('detalle_equipo', equipo_id=e.id) }}" title="Ver detalle"><i class="bi bi-eye-fill"></i></a>
+                {% if puede('gestionar') %}<a class="act" href="{{ url_for('editar_equipo', equipo_id=e.id) }}" title="Editar"><i class="bi bi-pencil-fill"></i></a>{% endif %}
+                {% if puede('admin') %}<form class="act-form" method="post" action="{{ url_for('baja_equipo', equipo_id=e.id) }}" data-motivo="Motivo de la baja del equipo {{ e.codigo }} (obligatorio). Su historial se conserva.">{{ csrf() }}<input type="hidden" name="motivo"><button class="act del" title="Dar de baja" {{ 'disabled' if e.estado in ['Asignado','En Mantenimiento','Dado de baja'] }}><i class="bi bi-trash3-fill"></i></button></form>{% endif %}
+            </div></td></tr>
+        {% else %}<tr><td colspan="7" class="vacio">No se encontraron equipos{% if texto or estado or f.tipo or f.ubicacion or f.desde or f.hasta %} con ese filtro{% endif %}.</td></tr>{% endfor %}
+        </tbody></table></div>
+    {{ pager(pg) }}
+</div>
+{% endblock %}

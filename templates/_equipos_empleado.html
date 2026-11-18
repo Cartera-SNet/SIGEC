@@ -1,0 +1,16 @@
+<div class="panel" style="margin-bottom:20px">
+    <h3 class="sub-title"><i class="bi bi-laptop"></i> Equipos asignados actualmente <span class="pill blue" style="margin-left:8px">{{ activas|length }}</span></h3>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código</th><th>Equipo</th><th>Serie</th><th>Asignado</th><th>Acta</th><th class="c">Acciones</th></tr></thead><tbody>
+    {% for a in activas %}<tr><td class="code">{{ a.codigo }}</td><td>{{ a.tipo or '' }} {{ a.marca }} {{ a.modelo }}</td><td>{{ a.numero_serie }}</td><td>{{ a.fecha_asignacion|fecha }}</td>
+        <td>{% if a.acta_estado == 'firmada' %}<span class="pill green">Firmada</span>{% elif a.acta_id %}<span class="pill yellow">Pendiente</span>{% endif %}</td>
+        <td><div class="acts">{% if a.acta_estado == 'pendiente' %}<a class="act ok" href="{{ url_for('firmar_acta', acta_id=a.acta_id) }}" title="Firmar acta"><i class="bi bi-pen-fill"></i></a>{% endif %}
+            {% if a.acta_id %}<a class="act" target="_blank" href="{{ url_for('imprimir_acta', acta_id=a.acta_id) }}" title="Ver acta"><i class="bi bi-printer-fill"></i></a>{% endif %}
+            {% if puede('ver') and (puede('gestionar') or puede('reportes')) %}<a class="act" href="{{ url_for('detalle_equipo', equipo_id=a.equipo_id) }}" title="Ver equipo"><i class="bi bi-eye-fill"></i></a>{% endif %}</div></td></tr>
+    {% else %}<tr><td colspan="6" class="vacio">Sin equipos asignados</td></tr>{% endfor %}</tbody></table></div>
+</div>
+<div class="panel">
+    <h3 class="sub-title"><i class="bi bi-clock-history"></i> Historial de asignaciones</h3>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código</th><th>Equipo</th><th>Asignado</th><th>Devuelto</th></tr></thead><tbody>
+    {% for a in historico %}<tr><td class="code">{{ a.codigo }}</td><td>{{ a.tipo or '' }} {{ a.marca }} {{ a.modelo }}</td><td>{{ a.fecha_asignacion|fecha }}</td><td>{{ a.fecha_devolucion|fecha }}</td></tr>
+    {% else %}<tr><td colspan="4" class="vacio">Sin asignaciones anteriores</td></tr>{% endfor %}</tbody></table></div>
+</div>

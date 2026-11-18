@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_macros.html" import estado_dot, csrf %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<section class="banner">
+    <h1>Bienvenido a <span>SIGEC</span></h1>
+    <p>Gestiona, controla y da seguimiento a tus equipos de cómputo de manera eficiente y segura.</p>
+    {% if puede('reportes') %}<a class="btn-pill" href="{{ url_for('reportes') }}"><i class="bi bi-bar-chart-fill"></i> Ver Reportes <i class="bi bi-arrow-right"></i></a>
+    {% else %}<a class="btn-pill" href="{{ url_for('listar_equipos') }}"><i class="bi bi-box-seam-fill"></i> Ver Inventario <i class="bi bi-arrow-right"></i></a>{% endif %}
+</section>
+
+<section class="stats">
+    <div class="stat s1"><div class="stat-row"><div class="stat-ico"><i class="bi bi-display-fill"></i></div><div><div class="stat-num">{{ r.total }}</div><div class="stat-lbl">Equipos Totales</div></div></div>
+        <span class="stat-trend"><i class="bi bi-arrow-up-right"></i> +{{ r.nuevos_mes }} este mes</span><div class="stat-bar"><i style="width:{{ 100 if r.total else 0 }}%"></i></div></div>
+    <div class="stat s2"><div class="stat-row"><div class="stat-ico"><i class="bi bi-check-lg"></i></div><div><div class="stat-num">{{ r.disponibles }}</div><div class="stat-lbl">Disponibles</div></div></div>
+        <span class="stat-trend"><i class="bi bi-arrow-up-right"></i> {{ pct(r.disponibles) }}%</span><div class="stat-bar"><i style="width:{{ pct(r.disponibles) }}%"></i></div></div>
+    <div class="stat s3"><div class="stat-row"><div class="stat-ico"><i class="bi bi-people-fill"></i></div><div><div class="stat-num">{{ r.asignados }}</div><div class="stat-lbl">Asignados</div></div></div>
+        <span class="stat-trend"><i class="bi bi-arrow-up-right"></i> {{ pct(r.asignados) }}%</span><div class="stat-bar"><i style="width:{{ pct(r.asignados) }}%"></i></div></div>
+    <div class="stat s4"><div class="stat-row"><div class="stat-ico"><i class="bi bi-wrench"></i></div><div><div class="stat-num">{{ r.mantenimiento }}</div><div class="stat-lbl">En Mantenimiento</div></div></div>
+        <span class="stat-trend"><i class="bi bi-arrow-up-right"></i> {{ pct(r.mantenimiento) }}%</span><div class="stat-bar"><i style="width:{{ pct(r.mantenimiento) }}%"></i></div></div>
+</section>
+
+<section class="row2">
+    <div class="card">
+        <div class="card-h"><i class="bi bi-bar-chart-fill"></i><h3>Estado del Inventario</h3></div>
+        <div class="donut-wrap">
+            <div class="donut"><canvas id="chartInv"></canvas><div class="center"><b>{{ r.total }}</b><span>Total</span></div></div>
+            <div class="legend">
+                <div><i class="sq" style="background:#307bfc"></i>Disponibles<b>{{ pct(r.disponibles) }}%</b></div>
+                <div><i class="sq" style="background:#27c664"></i>Asignados<b>{{ pct(r.asignados) }}%</b></div>
+                <div><i class="sq" style="background:#fd9344"></i>En Mantenimiento<b>{{ pct(r.mantenimiento) }}%</b></div>
+                {% if r.otros %}<div><i class="sq" style="background:#a78bfa"></i>Otros estados<b>{{ pct(r.otros) }}%</b></div>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-h"><i class="bi bi-calendar3"></i><h3>Últimas Asignaciones</h3><a class="more" href="{{ url_for('listar_actas') }}">Ver todas <i class="bi bi-arrow-right" style="font-size:16px;color:inherit"></i></a></div>
+        <div class="list-asg">
+            {% for a in asignaciones %}
+            <div class="asg">
+                <span class="av-s" style="background:{{ a.empleado|color_avatar }}">{{ a.empleado|iniciales }}</span>
+                <span>{{ a.empleado }}</span><span>{{ a.equipo }}</span><span>{{ a.fecha_asignacion|fecha }}</span>
+                <span class="pill {{ 'green' if a.estado == 'activa' else 'gray' }}">{{ 'Asignado' if a.estado == 'activa' else 'Devuelto' }}</span>
+            </div>
+            {% else %}
+            <div class="empty"><i class="bi bi-inbox"></i>Las asignaciones aparecerán aquí</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <div class="card-h"><i class="bi bi-box-seam-fill"></i><h3>Inventario Reciente</h3><a class="more sm" href="{{ url_for('listar_equipos') }}">Ver inventario completo <i class="bi bi-arrow-right" style="font-size:15px;color:inherit"></i></a></div>
+    <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Código</th><th>Equipo</th><th>Marca</th><th>Estado</th><th>Asignado a</th><th>Fecha de Registro</th><th class="c">Acciones</th></tr></thead>
+        <tbody>
+        {% for e in recientes %}
+        <tr><td class="code">{{ e.codigo }}</td><td>{{ e.tipo or '-' }}</td><td>{{ e.marca or '-' }}</td><td>{{ estado_dot(e.estado) }}</td>
+            <td>{{ e.asignado if e.asignado else '-' }}</td><td>{{ e.fecha_ingreso|fecha }}</td>
+            <td><div class="acts">
+                <a class="act" href="{{ url_for('detalle_equipo', equipo_id=e.id) }}" title="Ver"><i class="bi bi-eye-fill"></i></a>
+                {% if puede('gestionar') %}<a class="act" href="{{ url_for('editar_equipo', equipo_id=e.id) }}" title="Editar"><i class="bi bi-pencil-fill"></i></a>{% endif %}
+                {% if puede('admin') %}<form class="act-form" method="post" action="{{ url_for('baja_equipo', equipo_id=e.id) }}" data-confirm="¿Dar de baja el equipo {{ e.codigo }}? Su historial se conserva.">{{ csrf() }}<button class="act del" title="Dar de baja"><i class="bi bi-trash3-fill"></i></button></form>{% endif %}
+            </div></td></tr>
+        {% else %}<tr><td colspan="7" class="vacio">Aún no hay equipos registrados</td></tr>{% endfor %}
+        </tbody></table></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+new Chart(document.getElementById('chartInv'), {type:'doughnut',
+  data:{labels:['Disponibles','Asignados','En Mantenimiento','Otros estados'],
+        datasets:[{data:[{{ r.disponibles }},{{ r.asignados }},{{ r.mantenimiento }},{{ r.otros }}],backgroundColor:['#307bfc','#27c664','#fd9344','#a78bfa'],borderColor:'#fff',borderWidth:3,hoverOffset:4}]},
+  options:{cutout:'58%',maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+</script>
+{% endblock %}

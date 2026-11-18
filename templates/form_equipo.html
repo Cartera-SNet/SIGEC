@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}{{ 'Editar equipo' if editar else 'Nuevo equipo' }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:900px">
+    <h2 class="page-title">{{ 'Editar Equipo ' ~ e.codigo if editar else 'Registrar Nuevo Equipo' }}</h2>
+    <form method="post">{{ csrf() }}
+        <div class="form-grid">
+            <div class="fg"><label>Tipo de equipo <span class="req">*</span></label>
+                <select class="sel" name="tipo_id" required><option value="">Seleccione un tipo</option>
+                {% for t in tipos %}<option value="{{ t.id }}" {{ 'selected' if d.tipo_id|string == t.id|string }}>{{ t.nombre }}</option>{% endfor %}</select></div>
+            <div class="fg"><label>Estado</label>
+                {% if editar %}<input class="inp" value="{{ e.estado_nombre }}" readonly><div class="hint">Para cambiar el estado usa «Cambiar estado» en el detalle del equipo (exige un motivo).</div>
+                {% else %}<select class="sel" name="estado">{% for s in estados_ok %}<option {{ 'selected' if d.estado == s }}>{{ s }}</option>{% endfor %}</select>{% endif %}</div>
+            <div class="fg"><label>Marca <span class="req">*</span></label>
+                <select class="sel" name="marca" required><option value="">Seleccione una marca</option>
+                {% for m in opciones('marca', d.marca) %}<option {{ 'selected' if (d.marca or '')|lower == m|lower }}>{{ m }}</option>{% endfor %}</select>
+                {% if puede('admin') %}<div class="hint">¿Falta una? Agrégala en <a href="{{ url_for('configuracion', tab='catalogos') }}">Configuración › Catálogos</a>.</div>{% endif %}</div>
+            <div class="fg"><label>Modelo <span class="req">*</span></label><input class="inp" name="modelo" value="{{ d.modelo or '' }}" required placeholder="Ej: EliteBook 840"></div>
+            <div class="fg"><label>Número de serie <span class="req">*</span></label><input class="inp" name="numero_serie" value="{{ d.numero_serie or '' }}" required placeholder="Número único (RN-08)"></div>
+            <div class="fg"><label>Placa interna</label><input class="inp" name="placa" value="{{ d.placa or '' }}" placeholder="Opcional"></div>
+            <div class="fg"><label>Ubicación</label><input class="inp" name="ubicacion" value="{{ d.ubicacion or '' }}" placeholder="Ej: Oficina 2, Bodega"></div>
+            <div class="fg"><label>Características</label><input class="inp" name="caracteristicas" value="{{ d.caracteristicas or '' }}" placeholder="Ej: i5, 16GB RAM, 512GB SSD"></div>
+        </div>
+        <div class="fg"><label>Observaciones</label><textarea class="txt" name="observaciones" placeholder="Notas adicionales...">{{ d.observaciones or '' }}</textarea></div>
+        <div style="display:flex;gap:12px"><button class="btn btn-primary"><i class="bi bi-check-lg"></i> {{ 'Guardar cambios' if editar else 'Registrar Equipo' }}</button>
+            <a class="btn btn-ghost" href="{{ url_for('detalle_equipo', equipo_id=e.id) if editar else url_for('listar_equipos') }}">Cancelar</a></div>
+    </form>
+</div>
+{% endblock %}

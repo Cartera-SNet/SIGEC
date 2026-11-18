@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Configuración{% endblock %}
+{% macro catalogo(cat, titulo, items, ph) %}
+<div class="sub-card"><h3 class="sub-title" style="font-size:19px">{{ titulo }}</h3>
+    <table class="tbl"><thead><tr><th>Nombre</th><th>En uso</th><th>Estado</th><th class="c">Acciones</th></tr></thead><tbody>
+    {% for x in items %}<tr><td><form method="post" action="{{ url_for('guardar_catalogo', cat=cat) }}" style="display:flex;gap:6px">{{ csrf() }}<input type="hidden" name="accion" value="renombrar"><input type="hidden" name="id" value="{{ x.id }}"><input class="inp" style="height:38px" name="nombre" value="{{ x.nombre }}" maxlength="100"><button class="act" title="Guardar nombre"><i class="bi bi-check-lg"></i></button></form></td>
+        <td>{{ x.usos }}</td><td><span class="pill {{ 'green' if x.activo else 'gray' }}">{{ 'Activo' if x.activo else 'Inactivo' }}</span></td>
+        <td><form class="act-form" method="post" action="{{ url_for('guardar_catalogo', cat=cat) }}">{{ csrf() }}<input type="hidden" name="accion" value="alternar"><input type="hidden" name="id" value="{{ x.id }}"><button class="btn btn-ghost btn-sm">{{ 'Desactivar' if x.activo else 'Activar' }}</button></form></td></tr>
+    {% else %}<tr><td colspan="4" class="vacio">Aún no hay opciones</td></tr>{% endfor %}</tbody></table>
+    <form method="post" action="{{ url_for('guardar_catalogo', cat=cat) }}" style="display:flex;gap:8px;margin-top:14px">{{ csrf() }}<input type="hidden" name="accion" value="crear"><input class="inp" name="nombre" placeholder="{{ ph }}" maxlength="100" required><button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Agregar</button></form>
+</div>
+{% endmacro %}
+{% block content %}
+<div class="panel">
+    <div class="tabs">
+        {% for k, n in [('general','General'),('catalogos','Catálogos'),('notificaciones','Notificaciones'),('respaldos','Respaldos'),('seguridad','Seguridad')] %}
+        <a href="{{ url_for('configuracion', tab=k) }}" class="{{ 'active' if tab == k }}">{{ n }}</a>{% endfor %}
+    </div>
+
+    {% if tab == 'general' %}
+    <form method="post" action="{{ url_for('guardar_general') }}">{{ csrf() }}
+        <div class="cols-2" style="grid-template-columns:1.15fr 1fr">
+            <div class="sub-card"><h3 class="sub-title" style="font-size:19px">Información del Sistema</h3>
+                <div class="kv-t">
+                    <div><b>Nombre del Sistema:</b><span>SIGEC</span></div>
+                    <div><b>Versión:</b><span>{{ version }}</span></div>
+                    <div><b>Empresa:</b><input name="empresa" value="{{ cfg.empresa }}" maxlength="100" aria-label="Empresa"></div>
+                </div>
+                <div class="hint" style="margin-top:12px">Asistente de IA: <b>{{ asistente_motor }}</b></div>
+                {% if ia_configurada %}
+                <input type="hidden" name="ia_externa_form" value="1">
+                <label class="chk" style="margin-top:10px"><input type="checkbox" name="ia_externa" value="1" {{ 'checked' if cfg.ia_externa == '1' }}><div><b>Usar Claude (API de Anthropic) en el asistente</b><span>Responde cualquier pregunta y consulta datos del inventario (solo lectura). Al estar activo, las preguntas y los datos consultados se envían a Anthropic; desactívalo para que todo quede en el sistema (motor interno / Ollama).</span></div></label>
+                {% endif %}
+            </div>
+            <div class="sub-card"><h3 class="sub-title" style="font-size:19px">Preferencias</h3>
+                <div class="pref"><label>Idioma:</label><select class="sel" name="idioma"><option value="es" selected>Español</option><option disabled>English (próximamente)</option></select></div>
+                <div class="pref"><label>Zona Horaria:</label><select class="sel" name="zona_horaria">{% for k, v in zonas.items() %}<option value="{{ k }}" {{ 'selected' if cfg.zona_horaria == k }}>{{ v }}</option>{% endfor %}</select></div>
+            </div>
+        </div>
+        <div class="center-btn"><button class="btn btn-primary" style="height:52px;padding:0 34px"><i class="bi bi-floppy-fill"></i> Guardar Configuración</button></div>
+    </form>
+
+    {% elif tab == 'catalogos' %}
+    <div class="cols-2">
+        <div class="sub-card"><h3 class="sub-title" style="font-size:19px">Tipos de equipo</h3>
+            <table class="tbl"><thead><tr><th>Tipo</th><th>Equipos</th><th>Estado</th><th class="c">Acciones</th></tr></thead><tbody>
+            {% for t in tipos %}<tr><td><form method="post" action="{{ url_for('guardar_tipo') }}" style="display:flex;gap:6px">{{ csrf() }}<input type="hidden" name="accion" value="renombrar"><input type="hidden" name="id" value="{{ t.id }}"><input class="inp" style="height:38px" name="nombre" value="{{ t.nombre }}" maxlength="100"><button class="act" title="Guardar nombre"><i class="bi bi-check-lg"></i></button></form></td>
+                <td>{{ t.usos }}</td><td><span class="pill {{ 'green' if t.activo else 'gray' }}">{{ 'Activo' if t.activo else 'Inactivo' }}</span></td>
+                <td><form class="act-form" method="post" action="{{ url_for('guardar_tipo') }}">{{ csrf() }}<input type="hidden" name="accion" value="alternar"><input type="hidden" name="id" value="{{ t.id }}"><button class="btn btn-ghost btn-sm">{{ 'Desactivar' if t.activo else 'Activar' }}</button></form></td></tr>{% endfor %}</tbody></table>
+            <form method="post" action="{{ url_for('guardar_tipo') }}" style="display:flex;gap:8px;margin-top:14px">{{ csrf() }}<input type="hidden" name="accion" value="crear"><input class="inp" name="nombre" placeholder="Nuevo tipo (ej: Tablet)" maxlength="100" required><input class="inp" name="categoria" placeholder="Categoría" maxlength="50"><button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Agregar</button></form>
+        </div>
+        <div class="sub-card"><h3 class="sub-title" style="font-size:19px">Estados de equipo</h3>
+            <table class="tbl"><thead><tr><th>Estado</th><th>Equipos</th><th>Tipo</th><th class="c">Acciones</th></tr></thead><tbody>
+            {% for e in estados %}{% set prot = e.nombre in base or e.es_critico %}<tr>
+                <td>{% if prot %}<b>{{ e.nombre }}</b>{% else %}<form method="post" action="{{ url_for('guardar_estado') }}" style="display:flex;gap:6px">{{ csrf() }}<input type="hidden" name="accion" value="renombrar"><input type="hidden" name="id" value="{{ e.id }}"><input class="inp" style="height:38px" name="nombre" value="{{ e.nombre }}" maxlength="50"><button class="act" title="Guardar nombre"><i class="bi bi-check-lg"></i></button></form>{% endif %}</td>
+                <td>{{ e.usos }}</td><td>{% if prot %}<span class="pill blue"><i class="bi bi-lock-fill"></i>Protegido</span>{% else %}<span class="pill {{ 'green' if e.activo else 'gray' }}">{{ 'Activo' if e.activo else 'Inactivo' }}</span>{% endif %}</td>
+                <td>{% if not prot %}<form class="act-form" method="post" action="{{ url_for('guardar_estado') }}">{{ csrf() }}<input type="hidden" name="accion" value="alternar"><input type="hidden" name="id" value="{{ e.id }}"><button class="btn btn-ghost btn-sm">{{ 'Desactivar' if e.activo else 'Activar' }}</button></form>{% endif %}</td></tr>{% endfor %}</tbody></table>
+            <form method="post" action="{{ url_for('guardar_estado') }}" style="display:flex;gap:8px;margin-top:14px">{{ csrf() }}<input type="hidden" name="accion" value="crear"><input class="inp" name="nombre" placeholder="Nuevo estado" maxlength="50" required><input class="inp" name="descripcion" placeholder="Descripción"><button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Agregar</button></form>
+            <div class="hint" style="margin-top:10px">Los estados base (Disponible, Asignado, En Mantenimiento, En recepción, Dado de baja) sostienen las reglas del sistema y no se pueden modificar (RN-12).</div>
+        </div>
+    </div>
+    <div class="cols-2" style="margin-top:20px">
+        {{ catalogo('marca', 'Marcas', marcas, 'Nueva marca (ej: Dell)') }}
+        {{ catalogo('area', 'Áreas', areas, 'Nueva área (ej: Contabilidad)') }}
+    </div>
+    <div class="hint" style="margin-top:10px">Las marcas y las áreas aparecen como listas desplegables en los formularios de equipos y empleados. Al desactivar una opción deja de ofrecerse, pero los registros que ya la tienen no cambian.</div>
+
+    {% elif tab == 'notificaciones' %}
+    <form method="post" action="{{ url_for('guardar_notificaciones') }}" class="sub-card" style="max-width:720px">{{ csrf() }}
+        <h3 class="sub-title" style="font-size:19px">Avisos en la campana</h3>
+        <label class="chk"><input type="checkbox" name="notif_actas" value="1" {{ 'checked' if cfg.notif_actas == '1' }}><div><b>Actas pendientes de firma</b><span>Avisar cuando existan actas de entrega sin firmar.</span></div></label>
+        <label class="chk"><input type="checkbox" name="notif_mantenimiento" value="1" {{ 'checked' if cfg.notif_mantenimiento == '1' }}><div><b>Mantenimientos en proceso</b><span>Avisar cuando haya equipos en mantenimiento sin completar.</span></div></label>
+        <label class="chk"><input type="checkbox" name="notif_asignaciones" value="1" {{ 'checked' if cfg.notif_asignaciones == '1' }}><div><b>Nuevas asignaciones</b><span>Reservado para una próxima versión.</span></div></label>
+        <button class="btn btn-primary" style="margin-top:14px"><i class="bi bi-floppy-fill"></i> Guardar preferencias</button>
+    </form>
+
+    {% elif tab == 'respaldos' %}
+    <div class="sub-card" style="max-width:720px"><h3 class="sub-title" style="font-size:19px">Respaldo de la información</h3>
+        <p style="color:var(--muted);margin:0 0 16px">Descarga una copia completa de equipos, empleados, asignaciones, actas, historial y mantenimientos en formato JSON. Las contraseñas de los usuarios <b>no</b> se incluyen.</p>
+        <a class="btn btn-primary" href="{{ url_for('descargar_respaldo') }}"><i class="bi bi-cloud-arrow-down-fill"></i> Descargar respaldo ahora</a>
+        <p class="hint" style="margin-top:16px">Tu base de datos está en Neon, que además conserva sus propias copias (puntos de restauración) según tu plan.</p></div>
+    <form method="post" action="{{ url_for('guardar_operacion') }}" class="sub-card" style="max-width:720px;margin-top:18px">{{ csrf() }}
+        <h3 class="sub-title" style="font-size:19px">Operación</h3>
+        <label class="chk"><input type="checkbox" name="respaldo_auto" value="1" {{ 'checked' if cfg.respaldo_auto == '1' }}><div><b>Respaldo automático diario</b><span>Guarda un archivo JSON por día en la carpeta <code>respaldos/</code> mientras el sistema esté en ejecución (se conservan los últimos 14).</span></div></label>
+        <div class="fg" style="margin-top:12px;max-width:320px"><label>Equipos «sin movimiento» desde (días)</label><input class="inp" type="number" min="1" max="3650" name="umbral_sin_movimiento" value="{{ cfg.umbral_sin_movimiento }}"><div class="hint">Umbral del indicador del reporte.</div></div>
+        {% if auto %}<div class="hint">Últimos respaldos automáticos: {{ auto|join(', ') }}</div>{% endif %}
+        <button class="btn btn-primary" style="margin-top:10px"><i class="bi bi-floppy-fill"></i> Guardar</button>
+    </form>
+
+    {% else %}
+    <form method="post" action="{{ url_for('cambiar_password') }}" class="sub-card" style="max-width:520px" autocomplete="off">{{ csrf() }}
+        <h3 class="sub-title" style="font-size:19px">Cambiar mi contraseña</h3>
+        <div class="fg"><label>Contraseña actual</label><input class="inp" type="password" name="actual" required autocomplete="current-password"></div>
+        <div class="fg"><label>Nueva contraseña</label><input class="inp" type="password" name="nueva" minlength="8" required autocomplete="new-password"><div class="hint">Mínimo 8 caracteres.</div></div>
+        <div class="fg"><label>Confirmar nueva contraseña</label><input class="inp" type="password" name="confirmar" minlength="8" required autocomplete="new-password"></div>
+        <button class="btn btn-primary"><i class="bi bi-key-fill"></i> Actualizar contraseña</button>
+        <p class="hint" style="margin-top:14px">La sesión se cierra sola tras 60 minutos de inactividad. Tras 5 intentos fallidos de ingreso, el acceso se bloquea 5 minutos.</p>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

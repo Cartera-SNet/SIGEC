@@ -1,0 +1,28 @@
+{% macro estado_pill(nombre) -%}
+{% set m = {'Disponible':['green','bi-check-circle-fill'],'Asignado':['blue','bi-record-circle-fill'],'En Mantenimiento':['orange','bi-exclamation-circle-fill'],'En recepción':['purple','bi-inbox-fill'],'Dado de baja':['gray','bi-x-circle-fill']} %}
+{% set c = m.get(nombre, ['gray','bi-circle-fill']) -%}
+<span class="pill {{ c[0] }}"><i class="bi {{ c[1] }}"></i>{{ nombre or '-' }}</span>
+{%- endmacro %}
+
+{% macro estado_dot(nombre) -%}
+{% set m = {'Disponible':'green','Asignado':'blue','En Mantenimiento':'orange','En recepción':'gray','Dado de baja':'red'} -%}
+<span class="dot {{ m.get(nombre,'gray') }}"></span>{{ nombre or '-' }}
+{%- endmacro %}
+
+{% macro pager(pg, etiqueta='registros') %}
+<div class="pager">
+    <span>Mostrando {{ pg.desde }} – {{ pg.hasta }} de {{ pg.total }} {{ etiqueta }}</span>
+    {% if pg.paginas > 1 %}
+    <div class="pages">
+        <a class="{{ 'off' if pg.page <= 1 }}" href="{{ url_con(page=pg.page-1) }}" aria-label="Anterior"><i class="bi bi-arrow-left"></i></a>
+        {% for n in pg.nums %}
+            {% if n is none %}<span class="pg">…</span>
+            {% else %}<a class="{{ 'cur' if n == pg.page }}" href="{{ url_con(page=n) }}">{{ n }}</a>{% endif %}
+        {% endfor %}
+        <a class="{{ 'off' if pg.page >= pg.paginas }}" href="{{ url_con(page=pg.page+1) }}" aria-label="Siguiente"><i class="bi bi-arrow-right"></i></a>
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro csrf() %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}">{% endmacro %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGEC - Iniciar sesión</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/icons/bootstrap-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ version }}">
+</head>
+<body class="login-bg">
+<form class="login-card" method="post" autocomplete="on">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <img class="logo" src="{{ url_for('static', filename='img/logo_login.png') }}" alt="SIGEC">
+    <h1>Inicia sesión</h1>
+    <p class="sub">Sistema de Inventario y Gestión de Equipos de Cómputo</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}<div class="flash flash-{{ cat }}" style="text-align:left"><i class="bi bi-info-circle-fill"></i><span>{{ msg }}</span></div>{% endfor %}
+    {% endwith %}
+    <div class="fg"><label for="username">Usuario</label>
+        <div class="input-ico"><i class="bi bi-person"></i><input class="inp" id="username" name="username" required autofocus autocomplete="username"></div></div>
+    <div class="fg"><label for="password">Contraseña</label>
+        <div class="input-ico"><i class="bi bi-lock"></i><input class="inp" id="password" name="password" type="password" required autocomplete="current-password"></div></div>
+    <button class="btn btn-primary" type="submit"><i class="bi bi-box-arrow-in-right"></i> Ingresar</button>
+    <div class="login-foot">SIGEC v{{ version }} · Inventario Inteligente</div>
+</form>
+</body>
+</html>

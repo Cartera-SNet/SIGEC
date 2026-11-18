@@ -1,0 +1,10 @@
+{% extends "base.html" if usuario else "error_simple.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="panel err">
+    <div class="n">{{ codigo }}</div>
+    <h2>{{ titulo }}</h2>
+    <p>{{ mensaje }}</p>
+    <a class="btn btn-primary" href="{{ url_for('index') }}"><i class="bi bi-house-door"></i> Volver al inicio</a>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}{{ 'Editar empleado' if editar else 'Nuevo empleado' }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:900px">
+    <h2 class="page-title">{{ 'Editar Empleado' if editar else 'Registrar Nuevo Empleado' }}</h2>
+    <form method="post">{{ csrf() }}
+        <div class="form-grid">
+            <div class="fg"><label>Documento <span class="req">*</span></label><input class="inp" name="documento" value="{{ d.documento or '' }}" required></div>
+            <div class="fg"><label>Estado</label><select class="sel" name="estado"><option value="activo" {{ 'selected' if d.estado != 'inactivo' }}>Activo</option><option value="inactivo" {{ 'selected' if d.estado == 'inactivo' }}>Inactivo</option></select></div>
+            <div class="fg"><label>Nombres <span class="req">*</span></label><input class="inp" name="nombres" value="{{ d.nombres or '' }}" required></div>
+            <div class="fg"><label>Apellidos</label><input class="inp" name="apellidos" value="{{ d.apellidos or '' }}"></div>
+            <div class="fg"><label>Área</label>
+                <select class="sel" name="area"><option value="">Sin área</option>
+                {% for a in opciones('area', d.area) %}<option {{ 'selected' if (d.area or '')|lower == a|lower }}>{{ a }}</option>{% endfor %}</select>
+                {% if puede('admin') %}<div class="hint">¿Falta una? Agrégala en <a href="{{ url_for('configuracion', tab='catalogos') }}">Configuración › Catálogos</a>.</div>{% endif %}</div>
+            <div class="fg"><label>Cargo</label><input class="inp" name="cargo" value="{{ d.cargo or '' }}"></div>
+            <div class="fg"><label>Correo</label><input class="inp" type="email" name="correo" value="{{ d.correo or '' }}"></div>
+            <div class="fg"><label>Teléfono</label><input class="inp" name="telefono" value="{{ d.telefono or '' }}"></div>
+        </div>
+        <div style="display:flex;gap:12px"><button class="btn btn-primary"><i class="bi bi-check-lg"></i> {{ 'Guardar cambios' if editar else 'Registrar Empleado' }}</button><a class="btn btn-ghost" href="{{ url_for('listar_empleados') }}">Cancelar</a></div>
+    </form>
+</div>
+{% endblock %}

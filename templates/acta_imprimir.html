@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Acta de entrega N.º {{ '%04d'|format(a.id) }}</title>
+<link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
+<style>
+ body{font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#16264a;margin:0;background:#eef2fb}
+ .hoja{max-width:800px;margin:24px auto;background:#fff;padding:44px 52px;box-shadow:0 6px 30px rgba(20,40,100,.15)}
+ .cab{display:flex;align-items:center;gap:18px;border-bottom:3px solid #0b2a66;padding-bottom:16px;margin-bottom:22px}
+ .cab img{width:76px;height:76px}.cab h1{margin:0;font-size:22px;color:#0b2a66}.cab p{margin:2px 0 0;color:#5b6b8c;font-size:14px}
+ .cab .num{margin-left:auto;text-align:right;font-size:14px;color:#5b6b8c}.cab .num b{display:block;font-size:20px;color:#0b2a66}
+ h2{font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:#0b2a66;margin:22px 0 8px}
+ table{width:100%;border-collapse:collapse;font-size:14.5px}td{padding:8px 10px;border:1px solid #d6e0f5}td.k{background:#eef3fd;width:30%;font-weight:600}
+ p.t{font-size:14px;line-height:1.55;text-align:justify;margin:14px 0}
+ .firmas{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:70px}
+ .firmas div{border-top:1.5px solid #16264a;padding-top:8px;text-align:center;font-size:13.5px}
+ .estado{display:inline-block;padding:3px 12px;border-radius:12px;font-size:13px;font-weight:600}
+ .ok{background:#d6f3e1;color:#15803d}.pe{background:#fff1cc;color:#946200}
+ .barra{max-width:800px;margin:14px auto 0;text-align:right}
+ .barra button{background:#1a6cff;color:#fff;border:0;border-radius:9px;padding:10px 20px;font-size:15px;cursor:pointer}
+ @media print{body{background:#fff}.hoja{box-shadow:none;margin:0;padding:20px 30px;max-width:none}.barra{display:none}}
+</style></head><body>
+<div class="barra"><button onclick="window.print()">Imprimir / Guardar como PDF</button></div>
+<div class="hoja">
+ <div class="cab"><img src="{{ url_for('static', filename='favicon.png') }}" alt="">
+  <div><h1>Acta de Entrega de Equipo de Cómputo</h1><p>{{ cfg.empresa }} · SIGEC</p></div>
+  <div class="num">Acta N.º<b>{{ '%04d'|format(a.id) }}</b><span class="estado {{ 'ok' if a.estado == 'firmada' else 'pe' }}">{{ 'Firmada' if a.estado == 'firmada' else 'Pendiente de firma' }}</span></div></div>
+ <h2>Datos del equipo</h2>
+ <table><tr><td class="k">Código</td><td>{{ a.codigo }}</td><td class="k">Tipo</td><td>{{ a.tipo or '-' }}</td></tr>
+  <tr><td class="k">Marca / Modelo</td><td>{{ a.marca }} {{ a.modelo }}</td><td class="k">N.º de serie</td><td>{{ a.numero_serie }}</td></tr>
+  <tr><td class="k">Placa interna</td><td colspan="3">{{ a.placa or '-' }}</td></tr></table>
+ <h2>Datos del responsable</h2>
+ <table><tr><td class="k">Nombre</td><td>{{ a.empleado }}</td><td class="k">Documento</td><td>{{ a.documento }}</td></tr>
+  <tr><td class="k">Área</td><td>{{ a.area or '-' }}</td><td class="k">Cargo</td><td>{{ a.cargo or '-' }}</td></tr>
+  <tr><td class="k">Fecha de entrega</td><td colspan="3">{{ a.fecha_asignacion|fecha }}</td></tr>
+  {% if a.obs_asignacion %}<tr><td class="k">Observaciones</td><td colspan="3">{{ a.obs_asignacion }}</td></tr>{% endif %}</table>
+ <p class="t">El empleado recibe el equipo descrito en buen estado de funcionamiento y se compromete a darle un uso adecuado exclusivamente para fines laborales, a custodiarlo, a reportar de inmediato cualquier daño, pérdida o falla, y a devolverlo cuando la empresa lo requiera o termine su vinculación.</p>
+ <div class="firmas"><div>Entrega<br><b>Administración de TI</b></div><div>Recibe<br><b>{{ a.empleado }}</b><br>C.C. {{ a.documento }}{% if a.estado == 'firmada' %}<br><small>Firmada el {{ a.fecha_firma|fechahora }}</small>{% endif %}</div></div>
+</div></body></html>

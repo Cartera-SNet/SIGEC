@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager, csrf %}
+{% block title %}Mantenimiento{% endblock %}
+{% block content %}
+<div class="panel">
+    <h2 class="page-title">Mantenimiento de Equipos</h2>
+    <div class="cols-mant" {% if solo_mios %}style="grid-template-columns:1fr"{% endif %}>
+        {% if solo_mios %}<div class="hint" style="margin:-6px 0 4px">Aquí ves los mantenimientos que te asignaron. Cuando termines uno, márcalo como completado y el equipo volverá a quedar Disponible.</div>{% else %}
+        <div class="sub-card">
+            <h3 class="sub-title" style="font-size:19px">Registrar Mantenimiento</h3>
+            {% if puede('gestionar') %}
+            <form method="post" action="{{ url_for('nuevo_mantenimiento') }}">{{ csrf() }}
+                <div class="fg"><label>Equipo <span class="req">*</span></label>
+                    <select class="sel" name="equipo_id" required><option value="">Seleccione un equipo</option>
+                    {% for e in equipos %}<option value="{{ e.id }}">{{ e.codigo }} - {{ e.tipo or 'Equipo' }} {{ e.marca }} {{ e.modelo }}</option>{% endfor %}</select>
+                    <div class="hint">Solo aparecen equipos Disponibles.</div></div>
+                <div class="fg"><label>Responsable</label>
+                    <select class="sel" name="responsable_id"><option value="">Sin asignar</option>
+                    {% for r in responsables %}<option value="{{ r.id }}">{{ r.nombre }}</option>{% endfor %}</select>
+                    <div class="hint">{% if responsables %}Usuario con rol Mantenimiento que verá y completará este trabajo.{% else %}Aún no hay usuarios con rol Mantenimiento: créalos en Usuarios.{% endif %}</div></div>
+                <div class="fg"><label>Tipo de Mantenimiento</label><select class="sel" name="tipo"><option>Preventivo</option><option>Correctivo</option></select></div>
+                <div class="fg"><label>Fecha Programada</label><div class="date-wrap"><input class="inp" type="date" name="fecha" value="{{ hoy }}"><i class="bi bi-calendar3"></i></div></div>
+                <div class="fg"><label>Descripción</label><textarea class="txt" name="descripcion" style="min-height:80px" placeholder="Ingrese descripción..."></textarea></div>
+                <button class="btn btn-primary" {{ 'disabled' if not equipos }}><i class="bi bi-send-fill"></i> Guardar</button>
+            </form>
+            {% else %}<div class="empty"><i class="bi bi-lock"></i>{% if solo_mios %}Aquí ves los mantenimientos que te asignaron. Cuando termines uno, márcalo como completado.{% else %}Tu rol solo permite consultar los mantenimientos.{% endif %}</div>{% endif %}
+        </div>{% endif %}
+        <div class="sub-card">
+            <div class="card-h" style="margin-bottom:14px"><h3 style="font-size:19px">Historial de Mantenimientos</h3></div>
+            <div class="tbl-wrap"><table class="tbl">
+                <thead><tr><th>Equipo</th><th>Tipo</th><th>Fecha</th><th>Responsable</th><th>Estado</th>{% if puede('mantener') %}<th class="c">Acción</th>{% endif %}</tr></thead>
+                <tbody>{% for m in historial %}
+                    <tr><td class="code" title="{{ m.descripcion or '' }}">{{ m.codigo }}</td><td>{{ m.tipo }}</td><td>{{ m.fecha|fecha }}</td>
+                        <td>{% if m.estado == 'En Proceso' and puede('gestionar') %}<form class="act-form" method="post" action="{{ url_for('asignar_mantenimiento', mid=m.id) }}" style="display:flex;gap:4px">{{ csrf() }}
+                            <select class="filter-sel" name="responsable_id" style="height:34px;font-size:13px" aria-label="Responsable" onchange="this.form.submit()"><option value="">Sin asignar</option>{% for r in responsables %}<option value="{{ r.id }}" {{ 'selected' if m.responsable_id == r.id }}>{{ r.nombre }}</option>{% endfor %}</select></form>
+                            {% else %}{{ m.responsable or '-' }}{% endif %}</td>
+                        <td><span class="pill {{ 'green' if m.estado == 'Completado' else 'orange' }}"><i class="bi {{ 'bi-check-circle-fill' if m.estado == 'Completado' else 'bi-exclamation-circle-fill' }}"></i>{{ m.estado }}</span></td>
+                        {% if puede('mantener') %}<td class="c">{% if m.estado == 'En Proceso' and (usuario.rol != 'Mantenimiento' or m.responsable_id == usuario.id) %}<form class="act-form" method="post" action="{{ url_for('completar_mantenimiento', mid=m.id) }}" data-confirm="¿Marcar como completado? El equipo volverá a estar Disponible.">{{ csrf() }}<button class="act ok" title="Marcar como completado"><i class="bi bi-check-lg"></i></button></form>{% endif %}</td>{% endif %}</tr>
+                {% else %}<tr><td colspan="6" class="vacio">{{ "No tienes mantenimientos asignados" if solo_mios else "Aún no hay mantenimientos registrados" }}</td></tr>{% endfor %}</tbody></table></div>
+            {{ pager(pg, 'mantenimientos') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

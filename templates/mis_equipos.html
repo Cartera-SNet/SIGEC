@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Mis equipos{% endblock %}
+{% block content %}
+{% if not emp %}
+<div class="panel"><h2 class="page-title">Mis equipos</h2><div class="empty"><i class="bi bi-person-x"></i>Tu usuario no está vinculado a un empleado. Pide al administrador que lo vincule.</div></div>
+{% else %}
+<div class="panel" style="margin-bottom:20px"><h2 class="page-title" style="margin:0">Hola, {{ emp.nombres }}</h2><div class="hint">Aquí ves los equipos que tienes a cargo y puedes firmar tus actas de entrega.</div></div>
+{% include "_equipos_empleado.html" %}
+{% endif %}
+{% endblock %}

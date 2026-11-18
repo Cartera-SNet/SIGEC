@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Usuarios y Roles{% endblock %}
+{% block content %}
+<div class="panel">
+    <div style="display:flex;align-items:center;margin-bottom:18px"><h2 class="page-title" style="margin:0">Usuarios y Roles</h2>
+        <a class="btn btn-primary" style="margin-left:auto" href="{{ url_for('nuevo_usuario') }}"><i class="bi bi-plus-lg"></i> Nuevo Usuario</a></div>
+    <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th class="c">Acciones</th></tr></thead>
+        <tbody>{% for u in lista %}
+            <tr><td class="code">{{ u.username }}{% if u.username|lower == principal|lower %} <i class="bi bi-shield-fill-check" style="color:#1a6cff" title="Administrador principal"></i>{% endif %}</td>
+                <td>{{ u.nombre_completo or '-' }}</td><td>{{ u.rol }}</td>
+                <td><span class="pill {{ 'green' if u.activo else 'gray' }}"><i class="bi {{ 'bi-check-circle-fill' if u.activo else 'bi-dash-circle-fill' }}"></i>{{ 'Activo' if u.activo else 'Inactivo' }}</span></td>
+                <td><div class="acts">
+                    <a class="act" href="{{ url_for('ver_usuario', uid=u.id) }}" title="Ver"><i class="bi bi-eye-fill"></i></a>
+                    <a class="act" href="{{ url_for('editar_usuario', uid=u.id) }}" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                    <form class="act-form" method="post" action="{{ url_for('eliminar_usuario', uid=u.id) }}" data-confirm="¿Eliminar al usuario {{ u.username }}? Esta acción no se puede deshacer.">{{ csrf() }}
+                        <button class="act del" title="Eliminar" {{ 'disabled' if u.username|lower == principal|lower or u.id == usuario.id }}><i class="bi bi-trash3-fill"></i></button></form>
+                </div></td></tr>
+        {% endfor %}</tbody></table></div>
+    <div class="hint" style="margin-top:14px"><i class="bi bi-info-circle"></i> El usuario <b>{{ principal }}</b> es el administrador principal: no se puede eliminar, desactivar ni cambiar de rol.</div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager, csrf %}
+{% block title %}Actas de entrega{% endblock %}
+{% block content %}
+<div class="panel">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap">
+        <h2 class="page-title" style="margin:0">Actas de Entrega</h2>
+        <div style="margin-left:auto;display:flex;gap:8px">
+            <a class="btn btn-sm {{ 'btn-primary' if not estado else 'btn-ghost' }}" href="{{ url_for('listar_actas') }}">Todas</a>
+            <a class="btn btn-sm {{ 'btn-primary' if estado == 'pendiente' else 'btn-ghost' }}" href="{{ url_for('listar_actas', estado='pendiente') }}">Pendientes</a>
+            <a class="btn btn-sm {{ 'btn-primary' if estado == 'firmada' else 'btn-ghost' }}" href="{{ url_for('listar_actas', estado='firmada') }}">Firmadas</a>
+        </div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>N.º</th><th>Equipo</th><th>Empleado</th><th>Generada</th><th>Estado</th><th class="c">Acciones</th></tr></thead>
+        <tbody>{% for a in actas %}
+            <tr><td class="code">{{ '%04d'|format(a.id) }}</td><td>{{ a.codigo }} <small style="color:var(--muted)">({{ a.numero_serie }})</small></td><td>{{ a.empleado_nombre }}</td><td>{{ a.fecha_generacion|fecha }}</td>
+                <td>{% if a.estado == 'firmada' %}<span class="pill green"><i class="bi bi-check-circle-fill"></i>Firmada {{ a.fecha_firma|fecha }}</span>{% else %}<span class="pill yellow"><i class="bi bi-hourglass-split"></i>Pendiente</span>{% endif %}</td>
+                <td><div class="acts">
+                    <a class="act" href="{{ url_for('imprimir_acta', acta_id=a.id) }}" target="_blank" title="Imprimir acta"><i class="bi bi-printer-fill"></i></a>
+                    {% if a.evidencia_path %}<a class="act" href="{{ url_for('evidencia_acta', acta_id=a.id) }}" target="_blank" title="Ver evidencia"><i class="bi bi-paperclip"></i></a>{% endif %}
+                    {% if a.estado == 'pendiente' and (puede('gestionar') or (usuario.empleado_id and a.emp_id == usuario.empleado_id)) %}<a class="act ok" href="{{ url_for('firmar_acta', acta_id=a.id) }}" title="Registrar firma"><i class="bi bi-pen-fill"></i></a>{% endif %}
+                </div></td></tr>
+        {% else %}<tr><td colspan="6" class="vacio">No hay actas {{ 'con ese filtro' if estado else 'generadas' }}</td></tr>{% endfor %}</tbody></table></div>
+    {{ pager(pg, 'actas') }}
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import estado_pill, csrf %}
+{% block title %}Detalle {{ e.codigo }}{% endblock %}
+{% block content %}
+<div class="panel" style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+        <h2 class="page-title" style="margin:0">Equipo {{ e.codigo }}</h2>{{ estado_pill(e.estado_nombre) }}
+        <div style="margin-left:auto;display:flex;gap:10px">
+            {% if puede('gestionar') %}<a class="btn btn-ghost btn-sm" href="{{ url_for('editar_equipo', equipo_id=e.id) }}"><i class="bi bi-pencil-fill"></i> Editar</a>{% endif %}
+            {% if puede('gestionar') and e.estado_nombre == 'Disponible' %}<a class="btn btn-primary btn-sm" href="{{ url_for('asignar_equipo', equipo=e.id) }}"><i class="bi bi-person-check-fill"></i> Asignar</a>{% endif %}
+            {% if asignacion and puede('gestionar') %}<form method="post" action="{{ url_for('devolver_equipo', asig_id=asignacion.id) }}" data-confirm="¿Registrar la devolución de este equipo?">{{ csrf() }}<button class="btn btn-ghost btn-sm"><i class="bi bi-box-arrow-in-down-left"></i> Registrar devolución</button></form>{% endif %}
+        </div>
+    </div>
+    <div class="det-grid">
+        <p><span>Tipo</span><b>{{ e.tipo_nombre or '-' }}</b></p><p><span>Número de serie</span><b>{{ e.numero_serie }}</b></p>
+        <p><span>Marca / Modelo</span><b>{{ e.marca }} {{ e.modelo }}</b></p><p><span>Placa</span><b>{{ e.placa or '-' }}</b></p>
+        <p><span>Ubicación</span><b>{{ e.ubicacion or '-' }}</b></p><p><span>Fecha de registro</span><b>{{ e.fecha_ingreso|fecha }}</b></p>
+        <p><span>Características</span><b>{{ e.caracteristicas or '-' }}</b></p><p><span>Responsable actual</span><b>{{ asignacion.empleado_nombre if asignacion else 'Ninguno' }}</b></p>
+        {% if e.observaciones %}<p style="grid-column:1/-1"><span>Observaciones</span><b>{{ e.observaciones }}</b></p>{% endif %}
+    </div>
+</div>
+{% if puede('gestionar') and e.estado_nombre != 'Dado de baja' %}
+<div class="panel" style="margin-bottom:20px">
+    <h3 class="sub-title"><i class="bi bi-arrow-left-right"></i> Cambiar estado</h3>
+    <form class="estado-form" method="post" action="{{ url_for('cambiar_estado', equipo_id=e.id) }}" data-confirm="¿Confirmas el cambio de estado de {{ e.codigo }}?" >{{ csrf() }}
+        <div class="fg" style="margin:0"><label>Nuevo estado</label><select class="sel" name="estado" required>
+            {% for s in estados if s.nombre != e.estado_nombre and (s.nombre != 'Dado de baja' or puede('admin')) %}<option>{{ s.nombre }}</option>{% endfor %}</select></div>
+        <div class="fg" style="margin:0"><label>Motivo <span class="req">*</span></label><input class="inp" name="motivo" required maxlength="300" placeholder="Ej: equipo dañado, pérdida, revisión técnica..."></div>
+        <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Aplicar</button>
+    </form>
+    <div class="hint" style="margin-top:8px">Si el equipo está asignado, la asignación activa se cierra. Al pasar a «En Mantenimiento» se crea el registro de mantenimiento. «Dado de baja» es definitivo y solo lo aplica el administrador.</div>
+</div>
+{% endif %}
+<div class="panel">
+    <h3 class="sub-title"><i class="bi bi-clock-history"></i> Historial de movimientos</h3>
+    <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Fecha</th><th>Evento</th><th>Detalle</th><th>Cambio de estado</th><th>Usuario</th></tr></thead>
+        <tbody>{% for h in historial %}
+            <tr><td>{{ h.fecha|fechahora }}</td><td>{{ h.tipo_evento }}</td><td>{{ h.detalle or '' }}</td>
+                <td>{{ h.estado_anterior or '-' }} → {{ h.estado_nuevo or '-' }}</td><td>{{ h.usuario }}</td></tr>
+        {% else %}<tr><td colspan="5" class="vacio">Sin movimientos registrados</td></tr>{% endfor %}</tbody></table></div>
+    <div style="margin-top:18px"><a class="btn btn-ghost" href="{{ url_for('listar_equipos') }}"><i class="bi bi-arrow-left"></i> Volver al inventario</a></div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGEC - {% block title %}Dashboard{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/icons/bootstrap-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ version }}">
+    <script src="{{ url_for('static', filename='vendor/chart.umd.js') }}"></script>
+</head>
+<body class="layout-{{ layout|default('inner') }}">
+{% set ep = request.endpoint %}
+<aside class="sidebar">
+    <a class="brand" href="{{ url_for('index') }}">
+        {% include '_icono.html' %}
+        <h2>SIGEC</h2>
+        <p>Inventario Inteligente</p>
+    </a>
+    <nav class="nav">
+        {% if usuario.rol not in ['Empleado', 'Mantenimiento'] %}
+        <a href="{{ url_for('index') }}" class="{{ 'active' if ep == 'index' }}"><i class="bi bi-house-door-fill ico"></i><span>Dashboard</span></a>
+        {% set inv = ['listar_equipos','nuevo_equipo','editar_equipo','detalle_equipo','listar_empleados','nuevo_empleado','editar_empleado','listar_actas','imprimir_acta','firmar_acta','detalle_empleado'] %}
+        <div class="group {{ 'open' if ep in inv }}">
+            <button type="button" class="nav-toggle {{ 'active' if ep in inv }}" onclick="this.parentNode.classList.toggle('open')">
+                <i class="bi bi-box-seam-fill ico"></i><span>Inventario</span><i class="bi bi-chevron-down chev"></i>
+            </button>
+            <div class="submenu">
+                <a href="{{ url_for('listar_equipos') }}" class="{{ 'active' if ep in ['listar_equipos','detalle_equipo','editar_equipo'] }}">Equipos</a>
+                {% if puede('gestionar') %}<a href="{{ url_for('nuevo_equipo') }}" class="{{ 'active' if ep == 'nuevo_equipo' }}">Registrar equipo</a>{% endif %}
+                <a href="{{ url_for('listar_empleados') }}" class="{{ 'active' if ep in ['listar_empleados','nuevo_empleado','editar_empleado','detalle_empleado'] }}">Empleados</a>
+                <a href="{{ url_for('listar_actas') }}" class="{{ 'active' if ep in ['listar_actas','imprimir_acta','firmar_acta'] }}">Actas de entrega</a>
+            </div>
+        </div>
+        {% elif usuario.rol == 'Empleado' %}
+        <a href="{{ url_for('listar_actas') }}" class="{{ 'active' if ep in ['listar_actas','firmar_acta'] }}"><i class="bi bi-file-earmark-text ico"></i><span>Mis actas</span></a>
+        {% endif %}
+        {% if usuario and usuario.empleado_id and usuario.rol != 'Mantenimiento' %}
+        <a href="{{ url_for('mis_equipos') }}" class="{{ 'active' if ep == 'mis_equipos' }}"><i class="bi bi-laptop ico"></i><span>Mis equipos</span></a>
+        {% endif %}
+        {% if puede('gestionar') %}
+        <a href="{{ url_for('asignar_equipo') }}" class="{{ 'active' if ep in ['asignar_equipo','entrega_exitosa'] }}"><i class="bi bi-person-check-fill ico"></i><span>Asignaciones</span></a>
+        {% endif %}
+        {% if puede('reportes') %}
+        <a href="{{ url_for('reportes') }}" class="{{ 'active' if ep == 'reportes' }}"><i class="bi bi-bar-chart-fill ico"></i><span>Reportes</span></a>
+        {% endif %}
+        {% if usuario.rol != 'Empleado' %}
+        <a href="{{ url_for('mantenimiento') }}" class="{{ 'active' if ep == 'mantenimiento' }}"><i class="bi bi-wrench ico"></i><span>Mantenimientos</span></a>
+        {% endif %}
+        {% if puede('admin') %}
+        <a href="{{ url_for('usuarios') }}" class="{{ 'active' if ep in ['usuarios','nuevo_usuario','editar_usuario','ver_usuario'] }}"><i class="bi bi-people-fill ico"></i><span>Usuarios</span></a>
+        <a href="{{ url_for('configuracion') }}" class="{{ 'active' if ep == 'configuracion' }}"><i class="bi bi-gear-fill ico"></i><span>Configuración</span></a>
+        {% endif %}
+    </nav>
+    <div class="sidebar-foot">
+        <a href="{{ url_for('logout') }}" class="logout"><i class="bi bi-box-arrow-left"></i><span>Cerrar Sesión</span></a>
+    </div>
+</aside>
+
+<div class="scrim" id="scrim"></div>
+<div class="main">
+    <header class="topbar">
+        <button class="hamb" type="button" id="hamb" aria-label="Menú"><i class="bi bi-list"></i></button>
+        <span class="sep"></span>
+        <div class="topbar-title">Sistema de Inventario y Gestión de Equipos de Cómputo</div>
+        <div class="top-right">
+            <div class="dd bell-dd">
+                <button class="bell" type="button" onclick="this.parentNode.classList.toggle('open')" aria-label="Notificaciones">
+                    <i class="bi bi-bell"></i>{% if notif_total %}<span class="badge-n">{{ notif_total }}</span>{% endif %}
+                </button>
+                <div class="dd-menu">
+                    <div class="dd-head"><b>Notificaciones</b></div>
+                    {% for n in notif %}<a href="{{ n.url }}"><i class="bi {{ n.icono }}"></i>{{ n.texto }}</a>
+                    {% else %}<div class="vacio">Sin notificaciones pendientes</div>{% endfor %}
+                </div>
+            </div>
+            <div class="dd">
+                <button class="user-chip" type="button" onclick="this.parentNode.classList.toggle('open')">
+                    <span class="avatar">{% if usuario.foto %}<img src="{{ url_for('ver_foto', uid=usuario.id) }}?v={{ usuario.foto }}" alt="">{% else %}<i class="bi bi-person-fill"></i>{% endif %}</span>
+                    <div><strong>{{ usuario.nombre_completo or usuario.username }}</strong><small>{{ usuario.rol }}</small></div>
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+                <div class="dd-menu">
+                    <div class="dd-head"><b>{{ usuario.nombre_completo or usuario.username }}</b>{{ usuario.username }} · {{ usuario.rol }}</div>
+                    <a href="{{ url_for('configuracion', tab='seguridad') if puede('admin') else url_for('index') ~ '#cambiar-clave' }}" {% if not puede('admin') %}onclick="abrirClave();return false;"{% endif %}><i class="bi bi-key"></i>Cambiar contraseña</a>
+                    <a href="#" onclick="document.getElementById('inp-foto').click();return false;"><i class="bi bi-camera"></i>{{ 'Cambiar foto de perfil' if usuario.foto else 'Poner foto de perfil' }}</a>
+                    {% if usuario.foto %}<a href="#" onclick="document.getElementById('form-quitar-foto').submit();return false;"><i class="bi bi-trash3"></i>Quitar foto</a>{% endif %}
+                    <a href="{{ url_for('manual') }}" target="_blank"><i class="bi bi-book"></i>Manual de uso (PDF)</a>
+                    <a href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-left"></i>Cerrar sesión</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <form id="form-foto" method="post" action="{{ url_for('subir_foto') }}" enctype="multipart/form-data" style="display:none">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="file" id="inp-foto" name="foto" accept="image/png,image/jpeg,image/webp" onchange="this.form.submit()">
+    </form>
+    <form id="form-quitar-foto" method="post" action="{{ url_for('quitar_foto') }}" style="display:none"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"></form>
+
+    <main class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for cat, msg in messages %}
+            <div class="flash flash-{{ cat }}"><i class="bi {{ {'success':'bi-check-circle-fill','danger':'bi-exclamation-octagon-fill','warning':'bi-exclamation-triangle-fill'}.get(cat,'bi-info-circle-fill') }}"></i><span>{{ msg }}</span><button class="x" type="button" onclick="this.parentNode.remove()">×</button></div>
+            {% endfor %}
+        {% endwith %}
+        {% if clave_inicial %}<div class="flash flash-warning"><i class="bi bi-shield-exclamation"></i> Sigues usando la contraseña inicial del usuario Admin. Cámbiala ahora en <a href="{{ url_for('configuracion', tab='seguridad') }}">Configuración › Seguridad</a>.</div>{% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+{% if not puede('admin') %}
+<form id="form-clave" method="post" action="{{ url_for('cambiar_password') }}" style="display:none;position:fixed;inset:0;z-index:90;background:rgba(10,28,68,.55);place-items:center">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="panel" style="width:380px;max-width:92vw">
+        <h3 class="sub-title">Cambiar contraseña</h3>
+        <div class="fg"><label>Contraseña actual</label><input class="inp" type="password" name="actual" required></div>
+        <div class="fg"><label>Nueva contraseña (mín. 8)</label><input class="inp" type="password" name="nueva" minlength="8" required></div>
+        <div class="fg"><label>Confirmar nueva contraseña</label><input class="inp" type="password" name="confirmar" minlength="8" required></div>
+        <div style="display:flex;gap:10px"><button class="btn btn-primary">Guardar</button><button type="button" class="btn btn-ghost" onclick="document.getElementById('form-clave').style.display='none'">Cancelar</button></div>
+    </div>
+</form>
+{% endif %}
+
+<!-- Asistente de ayuda con IA local -->
+<button class="ia-fab no-print" id="ia-fab" type="button" aria-label="Asistente de ayuda"><i class="bi bi-stars"></i></button>
+<section class="ia-panel no-print" id="ia-panel" aria-label="Asistente SIGEC">
+    <div class="ia-head"><span class="bot"><i class="bi bi-robot"></i></span><div><b>Asistente SIGEC</b><small id="ia-motor">{{ 'Claude · puede consultar el inventario (solo lectura)' if ia_claude else 'IA local · tus datos no salen de tu equipo' }}</small></div><button type="button" id="ia-close" aria-label="Cerrar">×</button></div>
+    <div class="ia-msgs" id="ia-msgs"><div class="ia-m bot">¡Hola, {{ (usuario.nombre_completo or usuario.username).split()[0] }}! Soy tu asistente de ayuda. Pregúntame cómo usar SIGEC o consulta datos del inventario.</div></div>
+    <div class="ia-sug" id="ia-sug">
+        {% if usuario.rol == 'Empleado' %}<button type="button">¿Qué equipos tengo a mi cargo?</button><button type="button">¿Cómo firmo un acta?</button><button type="button">¿Tengo actas pendientes?</button>
+        {% elif usuario.rol == 'Mantenimiento' %}<button type="button">¿Qué mantenimientos tengo pendientes?</button><button type="button">¿Cómo completo un mantenimiento?</button>
+        {% else %}<button type="button">¿Cuántos equipos hay disponibles?</button><button type="button">¿Quién tiene el equipo EQ-001?</button><button type="button">¿Cómo asigno un equipo?</button><button type="button">¿Qué mantenimientos están en proceso?</button><button type="button">¿Qué actas faltan por firmar?</button>{% endif %}
+    </div>
+    <form class="ia-form" id="ia-form"><input id="ia-input" placeholder="Escribe tu pregunta..." autocomplete="off" maxlength="500"><button aria-label="Enviar"><i class="bi bi-send-fill"></i></button></form>
+</section>
+<script>window.SIGEC={csrf:"{{ csrf_token() }}",api:"{{ url_for('api_asistente') }}",pagina:"{{ request.path }}"};</script>
+<script src="{{ url_for('static', filename='app.js') }}?v={{ version }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

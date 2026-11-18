@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Firmar acta{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:760px">
+    <h2 class="page-title">Firmar Acta de Entrega N.º {{ '%04d'|format(acta.id) }}</h2>
+    <div class="det-grid" style="margin-bottom:16px">
+        <p><span>Equipo</span><b>{{ acta.codigo }} · {{ acta.tipo or '' }} {{ acta.marca }} {{ acta.modelo }}</b></p>
+        <p><span>Empleado</span><b>{{ acta.empleado_nombre }}</b></p>
+        <p><span>Asignado</span><b>{{ acta.fecha_asignacion|fecha }}</b></p>
+        <p><span>Estado</span><b>{{ 'Firmada' if acta.estado == 'firmada' else 'Pendiente' }}</b></p>
+    </div>
+    {% if acta.estado == 'firmada' %}<div class="hint">Esta acta ya fue firmada por {{ acta.firmado_por }} el {{ acta.fecha_firma|fechahora }}.</div>
+    {% elif acta.asig_estado != 'activa' %}<div class="hint" style="color:#be123c">No se puede firmar: la asignación ya fue cerrada (RN-04).</div>
+    {% else %}
+    <form method="post" enctype="multipart/form-data" data-confirm="¿Registrar la firma de esta acta? No se puede deshacer.">{{ csrf() }}
+        <div class="form-grid">
+            <div class="fg"><label>Firmada por</label><input class="inp" name="firmado_por" value="{{ acta.empleado_nombre }}" maxlength="150"></div>
+            <div class="fg"><label>Evidencia (opcional)</label><input class="inp" type="file" name="evidencia" accept=".pdf,.png,.jpg,.jpeg,image/*,application/pdf"><div class="hint">Foto o PDF del acta firmada. Máx. 5 MB.</div></div>
+        </div>
+        <div class="fg"><label>Observaciones</label><textarea class="txt" name="observaciones" placeholder="Notas de la entrega..."></textarea></div>
+        <div style="display:flex;gap:12px"><button class="btn btn-primary"><i class="bi bi-pen-fill"></i> Registrar firma</button>
+            <a class="btn btn-ghost" target="_blank" href="{{ url_for('imprimir_acta', acta_id=acta.id) }}"><i class="bi bi-printer-fill"></i> Ver acta</a>
+            <a class="btn btn-ghost" href="{{ url_for('listar_actas') }}">Cancelar</a></div>
+    </form>{% endif %}
+</div>
+{% endblock %}

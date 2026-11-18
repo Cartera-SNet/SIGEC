@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+{% block content %}
+<div class="panel">
+    <form class="rango" method="get">
+        <h2>Rango de Fechas:</h2>
+        <div class="range-pill">
+            <input type="date" name="desde" value="{{ desde }}" max="{{ hasta }}" aria-label="Desde"><span>–</span>
+            <input type="date" name="hasta" value="{{ hasta }}" aria-label="Hasta"><i class="bi bi-calendar3"></i>
+        </div>
+        <button class="btn btn-primary" style="margin-left:auto"><i class="bi bi-rocket-takeoff-fill"></i> Generar Reporte</button>
+        <div class="rep-filtros">
+            <label>Usuario
+                <select class="filter-sel" name="empleado"><option value="">Todos los usuarios</option>
+                {% for u in lista_usuarios %}<option value="{{ u.id }}" {{ 'selected' if emp_id == u.id }}>{{ u.nombre }} · {{ u.documento }}</option>{% endfor %}</select></label>
+            <label>Equipo
+                <select class="filter-sel" name="equipo"><option value="">Todos los equipos</option>
+                {% for e in lista_equipos %}<option value="{{ e.id }}" {{ 'selected' if eq_id == e.id }}>{{ e.codigo }} · {{ e.tipo or 'Equipo' }} {{ e.marca }} {{ e.modelo }}</option>{% endfor %}</select></label>
+            {% if eq_id or emp_id %}<a class="btn btn-ghost btn-sm" href="{{ url_for('reportes', desde=desde, hasta=hasta) }}"><i class="bi bi-x-lg"></i> Quitar filtros</a>{% endif %}
+        </div>
+    </form>
+    {% if rep.filtro %}<div class="rep-aviso"><i class="bi bi-funnel-fill"></i> Filtrado por <b>{{ rep.filtro }}</b>. Los filtros aplican a las asignaciones, mantenimientos, movimientos, actas y equipos sin movimiento; los gráficos y los demás indicadores muestran el inventario completo.</div>{% endif %}
+
+    <div class="cols-2" style="grid-template-columns:1.1fr 1fr">
+        <div class="chart-card"><h3>Equipos por Estado</h3><div style="height:290px"><canvas id="chEstado"></canvas></div></div>
+        <div class="chart-card"><h3>Equipos por Tipo</h3>
+            <div class="donut-wrap" style="padding-top:18px;gap:24px">
+                <div class="donut" style="width:190px;height:190px"><canvas id="chTipo"></canvas><div class="center"><b>{{ rep.resumen.total }}</b><span>Total</span></div></div>
+                <div class="legend" id="leg-tipo"></div>
+            </div>
+            {% if not rep.por_tipo %}<div class="empty" style="padding:10px">Aún no hay equipos registrados</div>{% endif %}
+        </div>
+    </div>
+
+    <div class="cols-2" style="margin-top:20px">
+        <div class="chart-card"><h3>Asignaciones en el rango <span class="pill blue" style="margin-left:6px">{{ rep.asignaciones|length }}</span></h3>
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Equipo</th><th>Empleado</th></tr></thead><tbody>
+            {% for a in rep.asignaciones[:8] %}<tr><td>{{ a.fecha_asignacion|fecha }}</td><td>{{ a.codigo }}</td><td>{{ a.empleado }}</td></tr>
+            {% else %}<tr><td colspan="3" class="vacio">Sin asignaciones en este rango</td></tr>{% endfor %}</tbody></table></div>
+            {% if rep.asignaciones|length > 8 %}<div class="hint">Se muestran 8 de {{ rep.asignaciones|length }}. El archivo exportado incluye todas.</div>{% endif %}</div>
+        <div class="chart-card"><h3>Mantenimientos en el rango <span class="pill orange" style="margin-left:6px">{{ rep.mantenimientos|length }}</span></h3>
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Equipo</th><th>Tipo</th><th>Responsable</th><th>Estado</th></tr></thead><tbody>
+            {% for m in rep.mantenimientos[:8] %}<tr><td>{{ m.fecha|fecha }}</td><td>{{ m.codigo }}</td><td>{{ m.tipo }}</td><td>{{ m.responsable or '-' }}</td><td>{{ m.estado }}</td></tr>
+            {% else %}<tr><td colspan="5" class="vacio">Sin mantenimientos en este rango</td></tr>{% endfor %}</tbody></table></div>
+            {% if rep.mantenimientos|length > 8 %}<div class="hint">Se muestran 8 de {{ rep.mantenimientos|length }}. El archivo exportado incluye todos.</div>{% endif %}</div>
+    </div>
+
+    <div class="chart-card" style="margin-top:20px"><h3>Movimientos de equipos <span class="pill blue" style="margin-left:6px">{{ rep.movimientos|length }}</span></h3>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Equipo</th><th>Evento</th><th>Detalle</th><th>Cambio de estado</th><th>Registrado por</th></tr></thead><tbody>
+        {% for h in rep.movimientos[:10] %}<tr><td>{{ h.fecha|fechahora }}</td><td class="code">{{ h.codigo }}</td><td>{{ h.tipo_evento }}</td><td>{{ h.detalle or '' }}</td><td>{{ h.estado_anterior or '-' }} → {{ h.estado_nuevo or '-' }}</td><td>{{ h.usuario }}</td></tr>
+        {% else %}<tr><td colspan="6" class="vacio">Sin movimientos en este rango{{ ' para el filtro elegido' if rep.filtro }}</td></tr>{% endfor %}</tbody></table></div>
+        {% if rep.movimientos|length > 10 %}<div class="hint">Se muestran 10 de {{ rep.movimientos|length }}. El archivo exportado incluye todos.</div>{% endif %}
+        {% if not rep.filtro %}<div class="hint">Elige un equipo o un usuario arriba para ver su historial completo.</div>{% endif %}</div>
+
+    <div class="cols-2" style="margin-top:20px;grid-template-columns:repeat(3,1fr)">
+        <div class="chart-card"><h3>Tasa de mantenimiento</h3><div style="font-size:34px;font-weight:700;color:var(--navy)">{{ rep.tasa_mantenimiento }}%</div><div class="hint">{{ rep.equipos_con_mant }} equipo(s) con mantenimiento en el rango sobre {{ rep.resumen.total }} totales.</div></div>
+        <div class="chart-card"><h3>Asignaciones cerradas</h3><div style="font-size:34px;font-weight:700;color:var(--navy)">{{ rep.asignaciones_cerradas }}</div><div class="hint">Devoluciones registradas en el rango.</div></div>
+        <div class="chart-card"><h3>Actas pendientes</h3><div style="font-size:34px;font-weight:700;color:var(--navy)">{{ rep.actas_pendientes|length }}</div><div class="hint">Sin firma a la fecha.</div></div>
+    </div>
+    <div class="cols-2" style="margin-top:20px">
+        <div class="chart-card"><h3>Equipos asignados por área</h3>
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Área</th><th>Equipos</th></tr></thead><tbody>
+            {% for a in rep.por_area %}<tr><td>{{ a.area }}</td><td>{{ a.c }}</td></tr>{% else %}<tr><td colspan="2" class="vacio">Sin equipos asignados</td></tr>{% endfor %}</tbody></table></div></div>
+        <div class="chart-card"><h3>Actas pendientes de firma</h3>
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>N.º</th><th>Equipo</th><th>Empleado</th><th>Días</th></tr></thead><tbody>
+            {% for a in rep.actas_pendientes[:6] %}<tr><td>{{ '%04d'|format(a.id) }}</td><td>{{ a.codigo }}</td><td>{{ a.empleado }}</td><td>{{ a.dias }}</td></tr>{% else %}<tr><td colspan="4" class="vacio">No hay actas pendientes</td></tr>{% endfor %}</tbody></table></div></div>
+    </div>
+    <div class="chart-card" style="margin-top:20px"><h3>Equipos sin movimiento (más de {{ rep.umbral }} días) <span class="pill gray" style="margin-left:6px">{{ rep.sin_movimiento|length }}</span></h3>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Código</th><th>Equipo</th><th>Estado</th><th>Último movimiento</th><th>Días</th></tr></thead><tbody>
+        {% for m in rep.sin_movimiento[:8] %}<tr><td class="code">{{ m.codigo }}</td><td>{{ m.tipo or '' }} {{ m.marca }} {{ m.modelo }}</td><td>{{ m.estado }}</td><td>{{ m.ultimo|fecha }}</td><td>{{ m.dias }}</td></tr>
+        {% else %}<tr><td colspan="5" class="vacio">Todos los equipos han tenido movimiento reciente</td></tr>{% endfor %}</tbody></table></div></div>
+
+    <div class="export-row">
+        <a class="btn btn-ex" href="{{ url_for('reporte_pdf', desde=desde, hasta=hasta, equipo=eq_id, empleado=emp_id) }}"><i class="bi bi-file-earmark-pdf-fill"></i> Exportar PDF</a>
+        <a class="btn btn-ex" href="{{ url_for('reporte_excel', desde=desde, hasta=hasta, equipo=eq_id, empleado=emp_id) }}"><i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel</a>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+var valores = {
+  id: 'valores',
+  afterDatasetsDraw: function(c){var x=c.ctx;x.save();x.font='700 15px Roboto, sans-serif';x.fillStyle='#0b1f4d';x.textAlign='center';
+    c.getDatasetMeta(0).data.forEach(function(b,i){x.fillText(c.data.datasets[0].data[i], b.x, b.y-8);});x.restore();}
+};
+new Chart(document.getElementById('chEstado'), {type:'bar', plugins:[valores],
+  data:{labels:['Disponibles','Asignados','En Mantenimiento'],
+        datasets:[{data:[{{ estados_chart['Disponible'] }},{{ estados_chart['Asignado'] }},{{ estados_chart['En Mantenimiento'] }}],
+                   backgroundColor:['#22b36b','#3b82f6','#f97316'],borderRadius:4,maxBarThickness:74}]},
+  options:{maintainAspectRatio:false,layout:{padding:{top:22}},plugins:{legend:{display:false},tooltip:{enabled:true}},
+    scales:{y:{beginAtZero:true,ticks:{precision:0,color:'#0b1f4d',font:{size:14}},grid:{color:'#e6ebf6'},border:{display:false}},
+            x:{ticks:{color:'#0b1f4d',font:{size:13,weight:'500'}},grid:{display:false}}}}});
+var tipos = {{ rep.por_tipo|map(attribute='nombre')|list|tojson }}, cant = {{ rep.por_tipo|map(attribute='c')|list|tojson }};
+var cols = ['#3b82f6','#8b8bf0','#f97316','#22b36b','#14b8a6','#ec4899','#eab308'];
+var tot = cant.reduce(function(a,b){return a+b;},0);
+new Chart(document.getElementById('chTipo'), {type:'doughnut',
+  data:{labels:tipos,datasets:[{data:cant,backgroundColor:cols,borderColor:'#fff',borderWidth:3}]},
+  options:{cutout:'58%',maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+document.getElementById('leg-tipo').innerHTML = tipos.map(function(t,i){
+  return '<div><i class="sq" style="background:'+cols[i%cols.length]+'"></i>'+t+'<b>'+(tot?Math.round(cant[i]*100/tot):0)+'%</b></div>';}).join('');
+</script>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import estado_pill, csrf %}
+{% block title %}Asignación de Equipos{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="cols-asg">
+    <div>
+        <h2 class="page-title">Asignación de Equipos</h2>
+        <div class="sub-card">
+            <h3 class="sub-title">Datos de la Asignación</h3>
+            <form method="post" id="form-asignar">{{ csrf() }}
+                <div class="fg"><label>Empleado <span class="req">*</span></label>
+                    <select class="sel" name="empleado_id" required><option value="">Seleccione un empleado</option>
+                    {% for m in empleados %}<option value="{{ m.id }}">{{ m.nombres }} {{ m.apellidos or '' }} ({{ m.documento }}){{ ' - ' ~ m.area if m.area }}</option>{% endfor %}</select>
+                    {% if not empleados %}<div class="hint" style="color:#be123c">No hay empleados activos. <a href="{{ url_for('nuevo_empleado') }}">Registra uno primero</a>.</div>{% endif %}</div>
+                <div class="fg"><label>Equipo <span class="req">*</span></label>
+                    <select class="sel" name="equipo_id" id="sel-equipo" required><option value="">Seleccione un equipo</option>
+                    {% for e in disponibles %}<option value="{{ e.id }}" {{ 'selected' if preseleccion == e.id|string }}>{{ e.codigo }} - {{ e.tipo or 'Equipo' }} {{ e.marca }} {{ e.modelo }}</option>{% endfor %}</select>
+                    {% if not disponibles %}<div class="hint" style="color:#be123c">No hay equipos disponibles en este momento.</div>{% endif %}</div>
+                <div class="fg"><label>Fecha de Asignación</label><div class="date-wrap"><input class="inp" type="date" name="fecha" value="{{ hoy }}" max="{{ hoy }}"><i class="bi bi-calendar3"></i></div></div>
+                <div class="fg"><label>Observaciones</label><textarea class="txt" name="observaciones" style="min-height:76px" placeholder="Ingrese observaciones..."></textarea></div>
+                <button class="btn btn-primary" {{ 'disabled' if not disponibles or not empleados }}><i class="bi bi-send-fill"></i> Asignar Equipo</button>
+            </form>
+        </div>
+    </div>
+    <div>
+        <h3 class="sub-title" style="margin-top:52px;font-size:22px">Equipos Disponibles</h3>
+        <label class="search" style="height:46px;margin-bottom:14px"><i class="bi bi-search" style="font-size:18px"></i><input id="buscar-disp" placeholder="Buscar equipo..." autocomplete="off"></label>
+        <div id="lista-disp">
+        {% for e in disponibles %}
+            <div class="asg-opt" data-t="{{ (e.codigo ~ ' ' ~ (e.tipo or '') ~ ' ' ~ e.marca ~ ' ' ~ e.modelo)|lower }}">
+                <div class="code">{{ e.codigo }}</div><div>{{ e.tipo or 'Equipo' }} {{ e.marca }}</div><div>{{ estado_pill('Disponible') }}</div>
+                <div><button type="button" class="add-btn" data-id="{{ e.id }}" title="Seleccionar para asignar">+</button></div>
+            </div>
+        {% else %}<div class="empty"><i class="bi bi-inbox"></i>No hay equipos disponibles</div>{% endfor %}
+        </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:20px">
+    <h3 class="sub-title">Asignaciones activas <span class="pill blue" style="margin-left:8px">{{ activas|length }}</span></h3>
+    <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Código</th><th>Equipo</th><th>Empleado</th><th>Fecha</th><th class="c">Devolución</th></tr></thead>
+        <tbody>{% for a in activas %}
+            <tr><td class="code">{{ a.codigo }}</td><td>{{ a.tipo or '' }} {{ a.marca }} {{ a.modelo }}</td><td>{{ a.empleado }}</td><td>{{ a.fecha_asignacion|fecha }}</td>
+                <td class="c"><form class="act-form" method="post" action="{{ url_for('devolver_equipo', asig_id=a.id) }}" data-confirm="¿Registrar la devolución del equipo {{ a.codigo }}?">{{ csrf() }}
+                    <select class="filter-sel" name="destino" style="height:38px;font-size:13px" aria-label="Destino del equipo"><option value="Disponible">A Disponible</option><option value="En recepción">A En recepción</option><option value="En Mantenimiento">A Mantenimiento</option></select>
+                    <button class="btn btn-ghost btn-sm"><i class="bi bi-box-arrow-in-down-left"></i> Registrar devolución</button></form></td></tr>
+        {% else %}<tr><td colspan="5" class="vacio">No hay asignaciones activas</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.add-btn').forEach(function(b){b.addEventListener('click',function(){
+  var s=document.getElementById('sel-equipo');s.value=b.dataset.id;s.focus();s.scrollIntoView({behavior:'smooth',block:'center'});});});
+document.getElementById('buscar-disp').addEventListener('input',function(){var t=this.value.toLowerCase();
+  document.querySelectorAll('#lista-disp .asg-opt').forEach(function(r){r.style.display=r.dataset.t.indexOf(t)>-1?'':'none';});});
+</script>
+{% endblock %}

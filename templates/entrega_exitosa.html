@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Entrega registrada{% endblock %}
+{% block content %}
+<div class="panel">
+    <h2 class="page-title">Registro de Entrega</h2>
+    <div class="entrega">
+        <div class="illus">
+            <svg viewBox="0 0 300 340" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <ellipse cx="170" cy="290" rx="110" ry="26" fill="#c3d6fb" opacity=".7"/>
+                <path d="M200 120c40-10 76 14 78 52 2 38-30 70-68 76-30 5-60-12-62-44-1-30 18-76 52-84z" fill="#cfdffb" opacity=".8"/>
+                <rect x="58" y="62" width="156" height="206" rx="14" fill="#fff" stroke="#1d4fb8" stroke-width="9"/>
+                <rect x="104" y="38" width="64" height="40" rx="9" fill="#1d4fb8"/><circle cx="136" cy="30" r="9" fill="#1d4fb8"/>
+                <path d="M82 122l11 11 20-22" stroke="#3b8bea" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M82 172l11 11 20-22" stroke="#3b8bea" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M82 222l11 11 20-22" stroke="#3b8bea" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="128" y="112" width="68" height="9" rx="4.5" fill="#3b8bea"/><rect x="128" y="130" width="46" height="9" rx="4.5" fill="#3b8bea"/>
+                <rect x="128" y="162" width="68" height="9" rx="4.5" fill="#3b8bea"/><rect x="128" y="180" width="46" height="9" rx="4.5" fill="#3b8bea"/>
+                <rect x="128" y="212" width="68" height="9" rx="4.5" fill="#3b8bea"/><rect x="128" y="230" width="46" height="9" rx="4.5" fill="#3b8bea"/>
+                <g transform="rotate(32 236 190)"><rect x="224" y="100" width="26" height="150" rx="6" fill="#1a3f9c"/><path d="M224 250h26l-13 34z" fill="#0f2a6e"/><rect x="224" y="100" width="26" height="22" rx="6" fill="#2a5bd0"/></g>
+            </svg>
+        </div>
+        <div>
+            <div class="ok-card">
+                <div class="ok-circle"><i class="bi bi-check-lg"></i></div>
+                <h3>Entrega Registrada con Éxito</h3>
+                <p>El equipo ha sido asignado correctamente al empleado.</p>
+            </div>
+            <div class="kv">
+                <div><span>Equipo:</span><b>{{ a.codigo }} · {{ a.tipo or '' }} {{ a.marca }} {{ a.modelo }}</b></div>
+                <div><span>Empleado:</span><b>{{ a.empleado }}</b></div>
+                <div><span>Fecha:</span><b>{{ a.fecha_asignacion|fecha }}</b></div>
+            </div>
+            <div style="display:flex;gap:14px">
+                {% if a.acta_id %}<a class="btn btn-primary" href="{{ url_for('imprimir_acta', acta_id=a.acta_id) }}" target="_blank"><i class="bi bi-printer-fill"></i> Imprimir Acta</a>{% endif %}
+                <a class="btn btn-ghost" href="{{ url_for('asignar_equipo') }}">Volver</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

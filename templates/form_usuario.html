@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}{{ 'Editar usuario' if editar else 'Nuevo usuario' }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:760px">
+    <h2 class="page-title">{{ 'Editar Usuario' if editar else 'Nuevo Usuario' }}</h2>
+    <form method="post" autocomplete="off">{{ csrf() }}
+        <div class="form-grid">
+            <div class="fg"><label>Usuario <span class="req">*</span></label><input class="inp" name="username" value="{{ d.username or '' }}" {{ 'readonly' if editar else 'required' }} pattern="[A-Za-z0-9_.\-]{3,30}" placeholder="Ej: jperez"></div>
+            <div class="fg"><label>Nombre completo</label><input class="inp" name="nombre_completo" value="{{ d.nombre_completo or '' }}"></div>
+            <div class="fg"><label>Rol <span class="req">*</span></label>
+                <select class="sel" name="rol" {{ 'disabled' if principal }}>{% for r in roles %}<option {{ 'selected' if d.rol == r }}>{{ r }}</option>{% endfor %}</select></div>
+            <div class="fg"><label>{{ 'Nueva contraseña (opcional)' if editar else 'Contraseña' }} {% if not editar %}<span class="req">*</span>{% endif %}</label>
+                <input class="inp" type="password" name="password" minlength="8" {{ '' if editar else 'required' }} autocomplete="new-password" placeholder="Mínimo 8 caracteres"></div>
+            <div class="fg" style="grid-column:1/-1"><label>Empleado vinculado (opcional)</label>
+                <select class="sel" name="empleado_id"><option value="">Sin vincular</option>
+                {% for m in empleados %}<option value="{{ m.id }}" {{ 'selected' if d.empleado_id|string == m.id|string }}>{{ m.nombres }} {{ m.apellidos or '' }} ({{ m.documento }})</option>{% endfor %}</select>
+                <div class="hint">Permite que un usuario con rol Empleado vea «Mis equipos» y firme sus propias actas.</div></div>
+            {% if not editar %}<div class="fg" style="grid-column:1/-1"><label>Documento (solo si el rol es Empleado y aún no existe su ficha)</label>
+                <input class="inp" name="documento" value="{{ d.documento or '' }}" maxlength="20" placeholder="Se crea la ficha de empleado con el nombre completo y este documento"></div>{% endif %}
+        </div>
+        {% if editar and not principal %}
+        <div class="fg"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" name="activo" value="1" {{ 'checked' if d.activo }} style="width:18px;height:18px"> Usuario activo (puede iniciar sesión)</label></div>
+        {% endif %}
+        <div class="hint" style="margin-bottom:16px"><b>Roles:</b> Administrador (todo) · Operador (gestiona inventario, asignaciones y mantenimientos) · Auditor y Jefe (consulta y reportes) · Mantenimiento (solo el módulo de mantenimientos: ve y completa los que se le asignan) · Empleado (consulta y firma de sus propias actas).</div>
+        <div style="display:flex;gap:12px"><button class="btn btn-primary"><i class="bi bi-check-lg"></i> {{ 'Guardar cambios' if editar else 'Crear usuario' }}</button><a class="btn btn-ghost" href="{{ url_for('usuarios') }}">Cancelar</a></div>
+    </form>
+</div>
+{% endblock %}

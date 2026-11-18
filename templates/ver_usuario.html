@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Usuario {{ u.username }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:760px">
+    <h2 class="page-title">Usuario: {{ u.username }}</h2>
+    <div class="det-grid" style="grid-template-columns:1fr">
+        <p><span>Nombre completo</span><b>{{ u.nombre_completo or '-' }}</b></p>
+        <p><span>Rol</span><b>{{ u.rol }}{% if principal %} (administrador principal){% endif %}</b></p>
+        <p><span>Estado</span><b>{{ 'Activo' if u.activo else 'Inactivo' }}</b></p>
+        <p><span>Creado</span><b>{{ u.created_at|fechahora }}</b></p>
+        <p><span>Permisos</span><b>{{ permisos|join(', ') }}</b></p>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:20px"><a class="btn btn-primary" href="{{ url_for('editar_usuario', uid=u.id) }}"><i class="bi bi-pencil-fill"></i> Editar</a><a class="btn btn-ghost" href="{{ url_for('usuarios') }}">Volver</a></div>
+</div>
+{% endblock %}

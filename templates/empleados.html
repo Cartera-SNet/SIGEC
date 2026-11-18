@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager %}
+{% block title %}Empleados{% endblock %}
+{% block content %}
+<div class="panel">
+    <form class="toolbar" method="get">
+        <label class="search"><i class="bi bi-search"></i><input name="q" value="{{ texto }}" placeholder="Buscar por nombre, documento, área o cargo..." autocomplete="off"></label>
+        {% if puede('gestionar') %}<a class="btn btn-primary" href="{{ url_for('nuevo_empleado') }}"><i class="bi bi-plus-lg"></i> Nuevo Empleado</a>{% endif %}
+    </form>
+    <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Documento</th><th>Nombre</th><th>Área</th><th>Cargo</th><th>Equipos</th><th>Estado</th><th class="c">Acciones</th></tr></thead>
+        <tbody>{% for m in empleados %}
+            <tr><td class="code">{{ m.documento }}</td><td><a class="lnk" href="{{ url_for('detalle_empleado', emp_id=m.id) }}">{{ m.nombres }} {{ m.apellidos or '' }}</a></td><td>{{ m.area or '-' }}</td><td>{{ m.cargo or '-' }}</td><td>{{ m.equipos }}</td>
+                <td><span class="pill {{ 'green' if m.estado == 'activo' else 'gray' }}"><i class="bi {{ 'bi-check-circle-fill' if m.estado == 'activo' else 'bi-dash-circle-fill' }}"></i>{{ m.estado|capitalize }}</span></td>
+                <td><div class="acts"><a class="act" href="{{ url_for('detalle_empleado', emp_id=m.id) }}" title="Ver ficha"><i class="bi bi-eye-fill"></i></a>{% if puede('gestionar') %}<a class="act" href="{{ url_for('editar_empleado', emp_id=m.id) }}" title="Editar"><i class="bi bi-pencil-fill"></i></a>{% endif %}</div></td></tr>
+        {% else %}<tr><td colspan="7" class="vacio">No hay empleados registrados{% if puede('gestionar') %}. Crea el primero con «Nuevo Empleado».{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+    {{ pager(pg, 'empleados') }}
+</div>
+{% endblock %}
